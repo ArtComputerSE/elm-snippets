@@ -1,0 +1,22 @@
+{
+  "Site1": {
+    "PC1": {
+      "ip": "x.x.x.x",
+      "version": "3"
+    },
+    "PC2": {
+      "ip": "x.x.x.x",
+      "version": "3"
+    }
+  },
+  "Site2": {
+    "PC1": {
+      "ip": "x.x.x.x",
+      "version": "3"
+    },
+    "PC2": {
+      "ip": "x.x.x.x",
+      "version": "3"
+    }
+  }
+}
