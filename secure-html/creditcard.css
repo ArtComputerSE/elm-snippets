@@ -1,0 +1,56 @@
+html {
+    box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: sans-serif;
+    margin: 40px;
+}
+
+form {
+    width: 370px;
+    margin: 0 auto;
+    padding: 40px;
+    box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+    0 1px 10px 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px -1px rgba(0, 0, 0, 0.4);
+}
+
+label {
+    display: block;
+    margin-bottom: 24px;
+    font-size: 18px;
+}
+
+input {
+    border: 1px solid lightgray;
+    padding: 8px;
+    font-size: 18px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+input:valid {
+    border: 1px solid seagreen;
+    background: honeydew;
+}
+
+button {
+    display: block;
+    padding: 20px 40px;
+    margin: 0 auto;
+    font-size: 18px;
+    background: lightgrey;
+    color: white;
+    border: none;
+}
+
+form:valid button {
+    background: steelblue;
+}

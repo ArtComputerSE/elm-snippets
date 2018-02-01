@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Credit Card Form</title>
+    <link rel="stylesheet" href="creditcard.css">
+</head>
+<body>
+
+<form id="form">
+    <label>
+        Name on the card<br>
+
+        <input
+                id="ccname"
+                name="ccname"
+                required
+                autofocus
+        />
+    </label>
+
+    <label>
+        Credit card number<br>
+
+        <input
+                id="cardnumber"
+                name="cardnumber"
+                required
+                pattern="[0-9]{12,19}"
+        />
+    </label>
+
+    <label>
+        CVC<br>
+
+        <input
+                id="cvc"
+                name="cvc"
+                required
+                pattern="[0-9]{3,4}"
+        />
+    </label>
+
+    <label>
+        Expiry date<br>
+
+        <input
+                id="cc-exp"
+                name="cc-exp"
+                placeholder="mm/yyyy"
+                required
+                pattern="[0-1][0-9]/20[1-2][0-9]"
+        />
+    </label>
+
+    <button id="submit">Submit</button>
+</form>
+</body>
+</html>
