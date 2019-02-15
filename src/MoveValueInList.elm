@@ -1,9 +1,9 @@
 module MoveValueInList exposing (moveValue)
 
-
 {-
-    Move a value in a list, given the current position and the offset.
+   Move a value in a list, given the current position and the offset.
 -}
+
 
 moveValue : Int -> Int -> List a -> List a
 moveValue fromPos offset list =

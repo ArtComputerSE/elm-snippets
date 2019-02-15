@@ -1,31 +1,42 @@
 module Main exposing (main)
 
-import Html exposing (Html, text, div, button)
+import Browser exposing (Document)
+import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
-import Task
 import Process
+import Task
 import Time
+
+
 type alias Model =
     { message : String }
 
 
-init =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( { message = "nothing yet" }, Cmd.none )
 
 
-main = Html.program
-    { view = view
-    , init = init
-    , update = update
-    , subscriptions = \_ -> Sub.none
-    }
+main =
+    Browser.document
+        { view = view
+        , init = init
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        }
 
 
+view : Model -> Document Msg
 view model =
-    div [] [ button [ onClick Login ] [ text "click me!" ]  , text model.message ]
+    div [] [ button [ onClick Login ] [ text "click me!" ], text model.message ]
 
-type Msg = Login | ShowDashboard Time.Time
 
+type Msg
+    = Login
+    | ShowDashboard Time.Posix
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Login ->
