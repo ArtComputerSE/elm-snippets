@@ -3,13 +3,18 @@ module OrdinalList exposing (moveLeft, moveRight)
 
 moveLeft : List { a | ordinal : Int } -> Int -> List { a | ordinal : Int }
 moveLeft list ordinal =
+    moveLeftHelper list ordinal 0
+
+
+moveLeftHelper : List { a | ordinal : Int } -> Int -> Int -> List { a | ordinal : Int }
+moveLeftHelper list ordinal index =
     case list of
         a :: b :: tail ->
-            if b.ordinal == ordinal then
-                { b | ordinal = a.ordinal } :: { a | ordinal = b.ordinal } :: tail
+            if index + 1 >= ordinal then
+                { b | ordinal = index } :: { a | ordinal = index + 1 } :: tail
 
             else
-                a :: moveLeft (b :: tail) ordinal
+                a :: moveLeftHelper (b :: tail) ordinal (index + 1)
 
         _ ->
             list
@@ -17,13 +22,4 @@ moveLeft list ordinal =
 
 moveRight : List { a | ordinal : Int } -> Int -> List { a | ordinal : Int }
 moveRight list ordinal =
-    case list of
-        a :: b :: tail ->
-            if a.ordinal == ordinal then
-                { b | ordinal = a.ordinal } :: { a | ordinal = b.ordinal } :: tail
-
-            else
-                a :: moveRight (b :: tail) ordinal
-
-        _ ->
-            list
+    moveLeft list (ordinal + 1)

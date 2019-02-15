@@ -26,6 +26,21 @@ elem3 =
     TestType "elem3" 2
 
 
+broken1 : TestType
+broken1 =
+    TestType "broken1" 0
+
+
+broken2 : TestType
+broken2 =
+    TestType "broken2" 0
+
+
+broken3 : TestType
+broken3 =
+    TestType "broken3" 0
+
+
 suite : Test.Test
 suite =
     describe "Ordinal list test suite."
@@ -56,7 +71,23 @@ suite =
                 \() ->
                     equal [ TestType elem1.payLoad 0, TestType elem3.payLoad 1, TestType elem2.payLoad 2 ]
                         (moveRight [ elem1, elem2, elem3 ] 1)
+            , test "move right equal to  list length changes nothing " <|
+                \() -> equal [ elem1, elem2 ] (moveRight [ elem1, elem2 ] 2)
             , test "move right beyond list length changes nothing " <|
                 \() -> equal [ elem1, elem2 ] (moveRight [ elem1, elem2 ] 3)
+            ]
+        , describe "self repairing suite, list with all ordinal zero"
+            [ test "repair when moving first element right" <|
+                \() ->
+                    equal [ TestType broken2.payLoad 0, TestType broken1.payLoad 1 ]
+                        (moveRight [ broken1, broken2 ] 0)
+            , test "repair when moving second element left" <|
+                \() ->
+                    equal [ TestType broken2.payLoad 0, TestType broken1.payLoad 1 ]
+                        (moveLeft [ broken1, broken2 ] 1)
+            , test "repair when moving third element left" <|
+                \() ->
+                    equal [ TestType broken1.payLoad 0, TestType broken3.payLoad 1, TestType broken2.payLoad 2 ]
+                        (moveLeft [ broken1, broken2, broken3 ] 2)
             ]
         ]
