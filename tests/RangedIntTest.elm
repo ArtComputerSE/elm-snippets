@@ -24,6 +24,14 @@ suite =
             , test "Adding creates new maximum" <|
                 \() -> Expect.equal 30 (RangedInt.theMax (RangedInt.add (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             ]
+        , describe "Multiplying"
+            [ test "Multiplying twp ranged ints" <|
+                \() -> Expect.equal 42 (RangedInt.toInt (RangedInt.multiply (RangedInt.minimum 6 7) (RangedInt.minimum 7 8)))
+            , test "Multiplying creates new minimum" <|
+                \() -> Expect.equal 5 (RangedInt.theMin (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+            , test "Multiplying creates new maximum" <|
+                \() -> Expect.equal 200 (RangedInt.theMax (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+            ]
         ]
 
 
@@ -58,9 +66,4 @@ failed val =
 
 ranged2 : RangedInt
 ranged2 =
-    case decodeString (RangedInt.decoder 1 2) "2" of
-        Ok value ->
-            value
-
-        Err _ ->
-            RangedInt.minimum 1 2
+    RangedInt.minimum 2 2
