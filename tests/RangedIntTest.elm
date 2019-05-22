@@ -20,9 +20,9 @@ suite =
             [ test "Adding two ranged ints" <|
                 \() -> Expect.equal 4 (RangedInt.toInt (RangedInt.add ranged2 ranged2))
             , test "Adding creates new minimum" <|
-                \() -> Expect.equal 6 (RangedInt.theMin (RangedInt.add (RangedInt.valid 1 10) (RangedInt.valid 5 20)))
+                \() -> Expect.equal 6 (RangedInt.theMin (RangedInt.add (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             , test "Adding creates new maximum" <|
-                \() -> Expect.equal 30 (RangedInt.theMax (RangedInt.add (RangedInt.valid 1 10) (RangedInt.valid 5 20)))
+                \() -> Expect.equal 30 (RangedInt.theMax (RangedInt.add (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             ]
         ]
 
@@ -63,4 +63,4 @@ ranged2 =
             value
 
         Err _ ->
-            RangedInt.valid 1 2
+            RangedInt.minimum 1 2

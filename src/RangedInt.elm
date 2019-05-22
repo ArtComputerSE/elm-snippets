@@ -1,4 +1,4 @@
-module RangedInt exposing (RangedInt, add, decoder, theMax, theMin, toInt, valid)
+module RangedInt exposing (RangedInt, add, decoder, minimum, theMax, theMin, toInt)
 
 {- Integers with range -}
 
@@ -39,8 +39,8 @@ add r1 r2 =
             construct (p1.min + p2.min) (p1.max + p2.max) (p1.value + p2.value)
 
 
-valid : Int -> Int -> RangedInt
-valid min max =
+minimum : Int -> Int -> RangedInt
+minimum min max =
     construct min max min
 
 
