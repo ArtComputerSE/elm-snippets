@@ -1,4 +1,4 @@
-module RangedInt exposing (RangedInt, create, crude, decoder, valueOf)
+module RangedInt exposing (RangedInt, add, decoder, theMax, theMin, toInt, valid)
 
 {- Integers with range -}
 
@@ -7,30 +7,41 @@ import String
 
 
 type RangedInt
-    = RangedInt
-        { min : Int
-        , max : Int
-        , value : Int
-        }
+    = RangedInt PayLoad
 
 
-create : Int -> Int -> Int -> Maybe RangedInt
-create min max value =
-    if min > value || max < value then
-        Nothing
-
-    else
-        Just <| RangedInt { min = min, max = max, value = value }
+type alias PayLoad =
+    { min : Int
+    , max : Int
+    , value : Int
+    }
 
 
-valueOf : Maybe RangedInt -> Int -> Int
-valueOf ranged default =
-    case ranged of
-        Nothing ->
-            default
+toInt : RangedInt -> Int
+toInt r =
+    (payload r).value
 
-        Just (RangedInt { min, max, value }) ->
-            value
+
+theMin : RangedInt -> Int
+theMin r =
+    (payload r).min
+
+
+theMax : RangedInt -> Int
+theMax r =
+    (payload r).max
+
+
+add : RangedInt -> RangedInt -> RangedInt
+add r1 r2 =
+    case ( r1, r2 ) of
+        ( RangedInt p1, RangedInt p2 ) ->
+            construct (p1.min + p2.min) (p1.max + p2.max) (p1.value + p2.value)
+
+
+valid : Int -> Int -> RangedInt
+valid min max =
+    construct min max min
 
 
 decoder : Int -> Int -> Decoder.Decoder RangedInt
@@ -44,12 +55,19 @@ helper min max value =
         Decoder.fail <| outOfRangeErrorMessage min max value
 
     else
-        Decoder.map (crude min max) Decoder.int
+        Decoder.map (construct min max) Decoder.int
 
 
-crude : Int -> Int -> Int -> RangedInt
-crude min max value =
+construct : Int -> Int -> Int -> RangedInt
+construct min max value =
     RangedInt { min = min, max = max, value = value }
+
+
+payload : RangedInt -> PayLoad
+payload r =
+    case r of
+        RangedInt p ->
+            p
 
 
 outOfRangeErrorMessage : Int -> Int -> Int -> String

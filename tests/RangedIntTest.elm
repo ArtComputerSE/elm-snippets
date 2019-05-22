@@ -4,47 +4,63 @@ import Expect
 import Json.Decode exposing (Decoder, Error(..), decodeString)
 import Json.Encode
 import RangedInt exposing (RangedInt)
-import Test exposing (Test, describe, test)
+import Test exposing (Test, concat, describe, test)
 
 
 suite : Test
 suite =
-    describe "RangedInt suite"
-        [ describe "Construct"
-            [ test "Construct two identical" <|
-                \() -> Expect.equal (RangedInt.create 1 8 6) (RangedInt.create 1 8 6)
-            , test "Construct two different value" <|
-                \() -> Expect.notEqual (RangedInt.create 1 5 2) (RangedInt.create 1 5 3)
-            , test "Construct with illegal value returns Nothing" <|
-                \() -> Expect.equal Nothing (RangedInt.create 1 5 6)
-            ]
-        , describe "Value of"
-            [ test "Value of" <|
-                \() -> Expect.equal 42 (RangedInt.valueOf (RangedInt.create 1 90 42) -999)
-            ]
-        , describe "Decoding"
+    concat
+        [ describe "Decoding"
             [ test "Simple" <|
-                \() -> decodeString testDecoder testString |> Expect.equal testStringValue
+                \() -> Expect.equal 4711 (decodeRangedInt "4711")
             , test "Failing" <|
-                \() -> decodeString testDecoder "76" |> Expect.equal failed
+                \() -> decodeString testDecoder1000To9999 "76" |> Expect.equal (failed 76)
+            ]
+        , describe "Adding"
+            [ test "Adding two ranged ints" <|
+                \() -> Expect.equal 4 (RangedInt.toInt (RangedInt.add ranged2 ranged2))
+            , test "Adding creates new minimum" <|
+                \() -> Expect.equal 6 (RangedInt.theMin (RangedInt.add (RangedInt.valid 1 10) (RangedInt.valid 5 20)))
+            , test "Adding creates new maximum" <|
+                \() -> Expect.equal 30 (RangedInt.theMax (RangedInt.add (RangedInt.valid 1 10) (RangedInt.valid 5 20)))
             ]
         ]
 
 
-testString =
-    "4711"
+
+{-
+   This is actually a test that the compiler does not allow you to breach in.
+
+   breach : RangedInt
+   breach =
+       RangedInt { min = 1, max = 6, value = 12 }
+-}
 
 
-testDecoder : Decoder RangedInt
-testDecoder =
+decodeRangedInt testString =
+    case decodeString testDecoder1000To9999 testString of
+        Ok value ->
+            RangedInt.toInt value
+
+        Err _ ->
+            64
+
+
+testDecoder1000To9999 : Decoder RangedInt
+testDecoder1000To9999 =
     RangedInt.decoder 1000 9999
 
 
-testStringValue : Result Json.Decode.Error RangedInt
-testStringValue =
-    Ok (RangedInt.crude 1000 9999 4711)
+failed : Int -> Result Json.Decode.Error RangedInt
+failed val =
+    Err (Json.Decode.Failure ("Value " ++ String.fromInt val ++ " outside range (1000,9999)") (Json.Encode.int val))
 
 
-failed : Result Json.Decode.Error RangedInt
-failed =
-    Err (Json.Decode.Failure "Value 76 outside range (1000,9999)" (Json.Encode.int 76))
+ranged2 : RangedInt
+ranged2 =
+    case decodeString (RangedInt.decoder 1 2) "2" of
+        Ok value ->
+            value
+
+        Err _ ->
+            RangedInt.valid 1 2
