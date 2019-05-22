@@ -34,9 +34,11 @@ theMax r =
 
 add : RangedInt -> RangedInt -> RangedInt
 add r1 r2 =
-    case ( r1, r2 ) of
-        ( RangedInt p1, RangedInt p2 ) ->
-            construct (p1.min + p2.min) (p1.max + p2.max) (p1.value + p2.value)
+    let
+        ( p1, p2 ) =
+            payloads r1 r2
+    in
+    construct (p1.min + p2.min) (p1.max + p2.max) (p1.value + p2.value)
 
 
 minimum : Int -> Int -> RangedInt
@@ -68,6 +70,13 @@ payload r =
     case r of
         RangedInt p ->
             p
+
+
+payloads : RangedInt -> RangedInt -> ( PayLoad, PayLoad )
+payloads r1 r2 =
+    case ( r1, r2 ) of
+        ( RangedInt p1, RangedInt p2 ) ->
+            ( p1, p2 )
 
 
 outOfRangeErrorMessage : Int -> Int -> Int -> String
