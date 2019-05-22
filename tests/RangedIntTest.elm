@@ -32,6 +32,14 @@ suite =
             , test "Multiplying creates new maximum" <|
                 \() -> Expect.equal 200 (RangedInt.theMax (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             ]
+        , describe "Subtracting"
+            [ test "Subtracting twp ranged ints" <|
+                \() -> Expect.equal -1 (RangedInt.toInt (RangedInt.subtract (RangedInt.minimum 6 7) (RangedInt.minimum 7 8)))
+            , test "Subtracting creates new minimum" <|
+                \() -> Expect.equal (1 - 20) (RangedInt.theMin (RangedInt.subtract (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+            , test "Subtracting creates new maximum" <|
+                \() -> Expect.equal (10 - 5) (RangedInt.theMax (RangedInt.subtract (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+            ]
         ]
 
 
