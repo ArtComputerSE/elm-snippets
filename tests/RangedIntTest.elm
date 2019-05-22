@@ -28,9 +28,9 @@ suite =
             [ test "Multiplying twp ranged ints" <|
                 \() -> Expect.equal 42 (RangedInt.toInt (RangedInt.multiply (RangedInt.minimum 6 7) (RangedInt.minimum 7 8)))
             , test "Multiplying creates new minimum" <|
-                \() -> Expect.equal 5 (RangedInt.theMin (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+                \() -> Expect.equal (1 * 5) (RangedInt.theMin (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             , test "Multiplying creates new maximum" <|
-                \() -> Expect.equal 200 (RangedInt.theMax (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+                \() -> Expect.equal (10 * 20) (RangedInt.theMax (RangedInt.multiply (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             ]
         , describe "Subtracting"
             [ test "Subtracting twp ranged ints" <|
@@ -39,6 +39,14 @@ suite =
                 \() -> Expect.equal (1 - 20) (RangedInt.theMin (RangedInt.subtract (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
             , test "Subtracting creates new maximum" <|
                 \() -> Expect.equal (10 - 5) (RangedInt.theMax (RangedInt.subtract (RangedInt.minimum 1 10) (RangedInt.minimum 5 20)))
+            ]
+        , describe "Dividing"
+            [ test "Dividing twp ranged ints" <|
+                \() -> Expect.equal 2 (RangedInt.toInt (RangedInt.divide (RangedInt.minimum 10 11) (RangedInt.minimum 5 6)))
+            , test "Dividing creates new minimum" <|
+                \() -> Expect.equal (12 // 4) (RangedInt.theMin (RangedInt.divide (RangedInt.minimum 12 13) (RangedInt.minimum 2 4)))
+            , test "Dividing creates new maximum" <|
+                \() -> Expect.equal (20 // 2) (RangedInt.theMax (RangedInt.divide (RangedInt.minimum 10 20) (RangedInt.minimum 2 5)))
             ]
         ]
 

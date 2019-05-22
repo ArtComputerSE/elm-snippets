@@ -1,4 +1,4 @@
-module RangedInt exposing (RangedInt, add, decoder, minimum, multiply, subtract, theMax, theMin, toInt)
+module RangedInt exposing (RangedInt, add, decoder, divide, minimum, multiply, subtract, theMax, theMin, toInt)
 
 {- Integers with range -}
 
@@ -57,6 +57,15 @@ subtract r1 r2 =
             payloads r1 r2
     in
     construct (p1.min - p2.max) (p1.max - p2.min) (p1.value - p2.value)
+
+
+divide : RangedInt -> RangedInt -> RangedInt
+divide r1 r2 =
+    let
+        ( p1, p2 ) =
+            payloads r1 r2
+    in
+    construct (p1.min // p2.max) (p1.max // p2.min) (p1.value // p2.value)
 
 
 minimum : Int -> Int -> RangedInt
