@@ -18,17 +18,7 @@ crypt cryptFn text =
 
 cryptList : (Char -> Char) -> List Char -> List Char
 cryptList cryptFn list =
-    case List.head list of
-        Just head ->
-            case List.tail list of
-                Just tail ->
-                    cryptFn head :: cryptList cryptFn tail
-
-                Nothing ->
-                    [ cryptFn head ]
-
-        Nothing ->
-            []
+    List.map cryptFn list
 
 
 decryptChar : Char -> Char
