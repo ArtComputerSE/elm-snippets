@@ -1,4 +1,4 @@
-module RangedInt exposing (RangedInt, add, decoder, divide, minimum, multiply, subtract, theMax, theMin, toInt)
+module RangedInt exposing (RangedInt, add, decoder, divide, maximum, minimum, multiply, subtract, theMax, theMin, toInt)
 
 {- Integers with range -}
 
@@ -71,6 +71,12 @@ divide r1 r2 =
 minimum : Int -> Int -> RangedInt
 minimum min max =
     construct min max min
+
+
+maximum : Int -> Int -> RangedInt
+maximum min max =
+    construct min max max
+
 
 
 decoder : Int -> Int -> Decoder.Decoder RangedInt
