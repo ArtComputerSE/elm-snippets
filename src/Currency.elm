@@ -1,4 +1,4 @@
-module Currency exposing (Currency(..), Eur, Exchange(..), Sek, add, convert)
+module Currency exposing (Currency(..), Eur, Exchange(..), Sek, add, addDifferent, convert)
 
 -- Demonstrate phantom types by the problem of mixing currencies.
 
@@ -40,3 +40,13 @@ type Exchange from to
 convert : Exchange from to -> Currency from -> Currency to
 convert (Exchange rate) (Currency c) =
     Currency <| round (rate * toFloat c)
+
+
+
+-- Add two amounts of different currencies, given the
+-- exchange rate.
+
+
+addDifferent : Exchange a b -> Currency a -> Currency b -> Currency b
+addDifferent rate c1 c2 =
+    add c2 (convert rate c1)
