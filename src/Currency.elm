@@ -1,11 +1,5 @@
 module Currency exposing (Currency(..), Eur, Exchange(..), Sek, add, addDifferent, convert)
 
--- Demonstrate phantom types by the problem of mixing currencies.
-
-
-type Currency c
-    = Currency Int
-
 
 type Eur
     = Eur
@@ -13,6 +7,27 @@ type Eur
 
 type Sek
     = Sek
+
+
+
+-- Demonstrate phantom types by the problem of mixing currencies.
+-- The `c` is not used by any of the type's data
+-- constructors so `Currency` is called a "phantom" type.
+
+
+type Currency c
+    = Currency Int
+
+
+
+-- Note that values like Currency 500 don’t tell you what kind of currency
+-- we’re dealing with.
+-- The only way to know is by adding a type signature.
+
+
+price : Currency Eur
+price =
+    Currency 500
 
 
 
