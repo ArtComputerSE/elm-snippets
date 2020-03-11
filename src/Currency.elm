@@ -9,6 +9,10 @@ type Sek
     = Sek
 
 
+type Usd
+    = Usd
+
+
 
 -- Demonstrate phantom types by the problem of mixing currencies.
 -- The `c` is not used by any of the type's data
@@ -65,3 +69,65 @@ convert (Exchange rate) (Currency c) =
 addDifferent : Exchange a b -> Currency a -> Currency b -> Currency b
 addDifferent rate c1 c2 =
     add c2 (convert rate c1)
+
+
+
+{- exchangeRates =
+   [ ( Eur, Sek, 10.2 ), ( Eur, Usd, 1.1 ) ]
+-}
+
+
+type ExchangeRate c
+    = ExchangeRate Float
+
+
+eurRate : ExchangeRate Eur
+eurRate =
+    findCurrencyRate "EUR"
+
+
+usdRate : ExchangeRate Usd
+usdRate =
+    findCurrencyRate "USD"
+
+
+adder : ExchangeRate a -> ExchangeRate b -> Currency a -> Currency b -> Currency b
+adder (ExchangeRate e1) (ExchangeRate e2) (Currency c1) (Currency c2) =
+    let
+        i1 =
+            e1 * toFloat c1
+
+        i2 =
+            e2 * toFloat c2
+
+        sum =
+            i1 + i2
+    in
+    Currency (round (sum / e2))
+
+
+type alias CurrencyRate =
+    { code : String
+    , rate : Float
+    }
+
+
+findCurrencyRate : String -> ExchangeRate c
+findCurrencyRate codeName =
+    let
+        maybeRate =
+            List.filter (\c -> c.code == codeName) currencies
+                |> List.map .rate
+                |> List.head
+    in
+    ExchangeRate (Maybe.withDefault 1.0 maybeRate)
+
+
+currencies : List CurrencyRate
+currencies =
+    [ CurrencyRate "SEK" 1.0
+    , CurrencyRate "EUR" 10.57
+    , CurrencyRate "USD" 9.5
+    , CurrencyRate "CHF" 9.9
+    , CurrencyRate "INR" 0.13
+    ]
