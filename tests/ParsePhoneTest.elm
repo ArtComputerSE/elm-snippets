@@ -1,7 +1,7 @@
 module ParsePhoneTest exposing (suite)
 
 import Expect
-import ParsePhone exposing (phoneParser)
+import Parse.ParsePhone exposing (phoneParser)
 import Parser
 import Test exposing (Test, describe, test)
 

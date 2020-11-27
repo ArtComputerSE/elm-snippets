@@ -1,4 +1,4 @@
-module ParsePhone exposing (Phone, phoneParser)
+module Parse.ParsePhone exposing (Phone, phoneParser)
 
 -- Demonstrate the parser by parsing phone numbers. Alex Korban.
 -- https://korban.net/posts/elm/2018-09-07-introduction-elm-parser/
