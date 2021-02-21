@@ -21,8 +21,18 @@ type Msg
     = Tick Time.Posix
 
 
+type alias CalendarDate =
+    { year : Int, month : Int, day : Int }
+
+
 type alias Model =
     { currentMonth : String
+    }
+
+
+type alias CalendarEvent =
+    { eventTime : Time.Posix
+    , description : String
     }
 
 
