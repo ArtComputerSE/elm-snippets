@@ -1,7 +1,7 @@
 module MarkDownExample.Page exposing (Model, init, main)
 
 import Browser
-import Element exposing (Element, column, el, fill, height, layout, row, text, width)
+import Element exposing (Element, column, el, fill, height, layout, padding, row, spacing, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -69,7 +69,12 @@ viewRendered : Model -> Element Msg
 viewRendered model =
     case Mardowner.render model.content of
         Ok elements ->
-            column [ width fill ] elements
+            column
+                [ width fill
+                , spacing 30
+                , padding 80
+                ]
+                elements
 
         Err error ->
             text error
