@@ -1,4 +1,4 @@
-module MarkDownExample.MarkDownExample exposing (main)
+module MarkDownExample.MarkDownExample exposing (view)
 
 import Browser
 import Element exposing (Element)
