@@ -1,7 +1,7 @@
 module AnimatedButton.SimpleAnimatedButton exposing (Model, main)
 
 import Browser
-import Element exposing (Element, fill, height, image, width)
+import Element exposing (Element, fill, height, image, px, width)
 import Element.Input as Input
 import Html
 import Simple.Animation as Animation exposing (Animation)
@@ -42,15 +42,15 @@ viewContent model =
         , label =
             if model.pulse then
                 animatedImage pulseAnimation
-                    []
+                    [ width (px 40) ]
                     { src = "src/AnimatedButton/logo.png"
                     , description = "logo"
                     }
 
             else
-                image []
-                    { src = "src/AnimatedButton/logo.png"
-                    , description = "logo"
+                image [ width (px 40) ]
+                    { src = "src/AnimatedButton/logo-hollow.png"
+                    , description = "logo-hollow"
                     }
         }
 
@@ -58,7 +58,7 @@ viewContent model =
 pulseAnimation =
     Animation.steps
         { startAt = [ Property.scale 1 ]
-        , options = [ Animation.loop, Animation.easeInOutQuad ]
+        , options = [ Animation.easeInOutQuad ]
         }
         [ Animation.step 500 [ Property.scale 2 ]
         , Animation.step 650 [ Property.scale 1 ]
