@@ -1,239 +1,176 @@
 module AnimatedButton.AnimatedButton exposing (main)
 
-{-| As you've probably figured out, this is a checkbox example!
-The main purpose of this example is to cover the basics of Elm Animator.
-You should checkout these places in the code, which are marked so you can search for them.
-It looks like a lot, but much of it is only needed once per project!
-
-  - (1) - Instead of a `Bool`, we store an `Animator Bool` in our model.
-  - (2) - The `Animator Model`, which is the piece of code that knows how to update your model when a timeline changes.
-  - (3) - Start a timeline by using `Animator.init`
-  - (4) - Turning out `Timeline` into a subscription using `Animator.toSubscription`.
-  - (5) - Updating our model using our animator and the current time.
-  - (6) - Starting an animation
-  - (7) - Turning our timeline into inline styles.
-
--}
-
 import Animator
-import Animator.Inline
 import Browser
 import Color
-import Html exposing (..)
-import Html.Attributes as Attr
-import Html.Events as Events
+import Dict exposing (Dict)
+import Element exposing (..)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Events exposing (..)
+import Element.Font as Font
+import Html exposing (Html)
 import Time
 
 
-{-| (1) - In our model we'd normally store just a `Bool`.
-However now we have an `Animator.Timeline Bool`
--}
-type alias Model =
-    { checked : Animator.Timeline Bool
-    }
+type State
+    = Default
+    | Hover
 
 
-{-| (2) - The first thing we do is create an `Animator Model`.
-It's job is to reach into our model and update our timelines when they need to be updated
-Notice you could add any number of timelines to this animator.
-**Note:** You likely only need one animator for a given project.
--}
-animator : Animator.Animator Model
-animator =
-    Animator.animator
-        |> Animator.watching
-            -- we tell the animator how
-            -- to get the checked timeline using .checked
-            .checked
-            -- and we tell the animator how
-            -- to update that timeline as well
-            (\newChecked model ->
-                { model | checked = newChecked }
-            )
-
-
-main =
-    Browser.document
-        { init =
-            \() ->
-                -- (3) - How we create our timeline
-                ( { checked = Animator.init False
-                  }
-                , Cmd.none
-                )
-        , view = view
-        , update = update
-        , subscriptions =
-            \model ->
-                -- (4) - turning out Animator into a subscription
-                -- this is where the animator will decide to have a subscription to AnimationFrame or not.
-                animator
-                    |> Animator.toSubscription Tick model
-        }
+type alias Id =
+    String
 
 
 type Msg
-    = Tick Time.Posix
-    | Check Bool
+    = RuntimeTriggeredAnimationStep Time.Posix
+    | UserHoveredButton Id
+    | UserUnhoveredButton Id
+
+
+type alias Model =
+    { buttonStates : Animator.Timeline (Dict Id State) }
+
+
+animator : Animator.Animator Model
+animator =
+    Animator.animator
+        |> Animator.watchingWith
+            .buttonStates
+            (\newButtonStates model ->
+                { model | buttonStates = newButtonStates }
+            )
+            (\buttonStates ->
+                List.any ((==) Hover) <| Dict.values buttonStates
+            )
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { buttonStates =
+            Animator.init <|
+                Dict.fromList [ ( "Uno", Default ), ( "Dos", Default ), ( "Tres", Default ) ]
+      }
+    , Cmd.none
+    )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Animator.toSubscription RuntimeTriggeredAnimationStep model animator
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        maybeAlways value =
+            Maybe.map (\_ -> value)
+
+        setButtonState id newState =
+            Dict.update id (maybeAlways newState) <| Animator.current model.buttonStates
+    in
     case msg of
-        Tick newTime ->
-            ( model
-                |> Animator.update newTime animator
-              -- (5) - Updating our model using our animator and the current time.
+        RuntimeTriggeredAnimationStep newTime ->
+            ( Animator.update newTime animator model
             , Cmd.none
             )
 
-        Check newChecked ->
+        UserHoveredButton id ->
             ( { model
-                | checked =
-                    -- (6) - Here we're adding a new state to our timeline.
-                    model.checked
-                        |> Animator.go Animator.slowly newChecked
+                | buttonStates =
+                    Animator.go Animator.slowly (setButtonState id Hover) model.buttonStates
+              }
+            , Cmd.none
+            )
+
+        UserUnhoveredButton id ->
+            ( { model
+                | buttonStates =
+                    Animator.go Animator.slowly (setButtonState id Default) model.buttonStates
               }
             , Cmd.none
             )
 
 
-view : Model -> Browser.Document Msg
-view model =
-    { title = "Animator - AnimatedButton"
-    , body =
-        [ stylesheet
-        , div
-            [ Attr.class "root"
-            ]
-            [ div
-                [ Attr.class "viewport"
-                ]
-                [ viewHugeCheckbox model.checked
-                ]
-            ]
-        ]
-    }
+buttons : Model -> Element Msg
+buttons model =
+    let
+        buttonState id =
+            Maybe.withDefault Default <| Dict.get id <| Animator.current model.buttonStates
 
-
-viewHugeCheckbox : Animator.Timeline Bool -> Html Msg
-viewHugeCheckbox checked =
-    div
-        [ Attr.style "display" "flex"
-        , Attr.style "align-items" "center"
-        , Attr.style "flex-direction" "column"
-        ]
-        [ div
-            [ Attr.style "display" "flex"
-            , Attr.style "align-items" "center"
-            , Attr.style "cursor" "pointer"
-            , Events.onClick (Check (not (Animator.current checked)))
-            ]
-            [ div
-                -- (7) - Rendering our timeline as inline styles.
-                -- What we're doing here is mapping our timeline states
-                -- to what values they should be in the view.
-                -- Elm animator then uses these to interpolate where we should be.
-                [ Animator.Inline.backgroundColor checked <|
-                    \state ->
-                        if state then
-                            Color.rgb255 255 96 96
-
-                        else
-                            Color.white
-                , Animator.Inline.borderColor checked <|
-                    \state ->
-                        if state then
-                            Color.rgb255 255 96 96
-
-                        else
-                            Color.black
-                , Attr.class "checkbox"
-                ]
-                [ div
-                    [ Animator.Inline.opacity checked <|
-                        \state ->
-                            if state then
-                                Animator.at 1
-
-                            else
-                                Animator.at 0
-                    , Animator.Inline.transform
-                        { position = { x = 0, y = 0 }
-                        , rotate =
-                            Animator.move checked <|
-                                \state ->
-                                    if state then
-                                        Animator.at (turns 0)
-
-                                    else
-                                        Animator.at (turns 0.05)
-                        , scale =
-                            Animator.move checked <|
-                                \state ->
-                                    if state then
-                                        Animator.at 1
-
-                                    else
-                                        Animator.at 0.8
-                        }
-                    ]
-                    [ text "!" ]
-                ]
-            , span
-                [ Attr.style "margin-left" "32px"
-                , Attr.style "font-size" "190px"
-                ]
-                [ text "Click me" ]
-            ]
-        , div
-            [ Animator.Inline.opacity checked <|
-                \state ->
-                    if state then
-                        Animator.at 1
+        borderColor id =
+            fromRgb <|
+                Color.toRgba <|
+                    if buttonState id == Hover then
+                        Color.blue
 
                     else
-                        Animator.at 0
-            ]
-            [ text "Great job "
-            , span
-                [ Attr.style "display" "inline-block"
+                        Color.black
+
+        fontColor id =
+            fromRgb <|
+                Color.toRgba <|
+                    if buttonState id == Hover then
+                        Color.white
+
+                    else
+                        Color.black
+
+        bgColor id =
+            fromRgb <|
+                Color.toRgba <|
+                    Animator.color model.buttonStates <|
+                        \buttonStates ->
+                            if (Maybe.withDefault Default <| Dict.get id buttonStates) == Hover then
+                                Color.lightBlue
+
+                            else
+                                Color.white
+
+        fontSize id =
+            round <|
+                Animator.linear model.buttonStates <|
+                    \buttonStates ->
+                        Animator.at <|
+                            if (Maybe.withDefault Default <| Dict.get id buttonStates) == Hover then
+                                28
+
+                            else
+                                20
+
+        button id =
+            el
+                [ width <| px 200
+                , height <| px 60
+                , Border.width 3
+                , Border.rounded 6
+                , Border.color <| borderColor id
+                , Background.color <| bgColor id
+                , Font.color <| fontColor id
+                , Font.size <| fontSize id
+                , padding 10
+                , onMouseEnter <| UserHoveredButton id
+                , onMouseLeave <| UserUnhoveredButton id
                 ]
-                [ text "👍" ]
-            ]
-        ]
+            <|
+                (el [ centerX, centerY ] <| text <| "Button " ++ id)
+    in
+    [ "Uno", "Dos", "Tres" ]
+        |> List.map button
+        |> column [ spacing 10, centerX, centerY ]
 
 
-stylesheet : Html msg
-stylesheet =
-    Html.node "style"
-        []
-        [ text """@import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
-.root {
-    width: 100%;
-    height: 1000px;
-    font-size: 48px;
-    user-select: none;
-    padding: 50px;
-    font-family: 'Roboto', sans-serif;
-}
-.viewport {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 200px;
-}
-.checkbox {
-    border-width: 10px;
-    border-style: solid;
-    color: #000;
-    width: 160px;
-    height: 160px;
-    border-radius: 20px;
-    font-size: 160px;
-    line-height: 1.0;
-    text-align: center;
-}
-"""
-        ]
+view : Model -> Html Msg
+view model =
+    layout [ width fill, height fill ] <|
+        buttons model
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , view = view
+        , subscriptions = subscriptions
+        }
