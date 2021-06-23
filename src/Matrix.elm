@@ -3,6 +3,7 @@ module Matrix exposing
     , empty, initialize
     , size, get, getXs, getYs
     , set
+    , indexMap, map
     )
 
 {-| Two dimensional matrix backed by Array from the Elm core, the fast immutable array
@@ -128,3 +129,13 @@ pickY y arrays =
 
                         Just tail ->
                             v :: pickY y tail
+
+
+map : (a -> b) -> Matrix a -> Matrix b
+map function matrix =
+    matrix |> Array.map (Array.map function)
+
+
+indexMap : (Int -> Int -> a -> b) -> Matrix a -> Matrix b
+indexMap function matrix =
+    matrix |> Array.indexedMap (\x array -> Array.indexedMap (function x) array)

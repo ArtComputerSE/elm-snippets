@@ -21,9 +21,19 @@ twoByThree =
     Matrix.initialize 2 3 initFn
 
 
+twoByThreeInt : Matrix.Matrix Int
+twoByThreeInt =
+    Matrix.initialize 2 3 initFnInt
+
+
 initFn : Int -> Int -> String
 initFn r c =
     "(" ++ String.fromInt r ++ "," ++ String.fromInt c ++ ")"
+
+
+initFnInt : Int -> Int -> Int
+initFnInt r c =
+    r * c
 
 
 suite : Test
@@ -63,4 +73,17 @@ suite =
             , test "Of limits is empty" <|
                 \() -> Expect.equal Array.empty (Matrix.getYs threeByThree 999)
             ]
+        , describe "Map function"
+            [ test "Double contents" <|
+                \() -> Expect.equal (Array.fromList [ Array.fromList [ 0, 0, 0 ], Array.fromList [ 0, 2, 4 ] ]) (Matrix.map (\n -> n * 2) twoByThreeInt)
+            ]
+        , describe "IndexMap function"
+            [ test "Contents depending on x, y" <|
+                \() -> Expect.equal (Array.fromList [ Array.fromList [ "0(0,0)0", "0(0,1)1", "0(0,2)2" ], Array.fromList [ "1(1,0)0", "1(1,1)1", "1(1,2)2" ] ]) (Matrix.indexMap indexedConvert twoByThree)
+            ]
         ]
+
+
+indexedConvert : Int -> Int -> String -> String
+indexedConvert x y value =
+    String.fromInt x ++ value ++ String.fromInt y
