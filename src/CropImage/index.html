@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Croppie snippet</title>
+    <link rel="stylesheet" href="https://unpkg.com/elm-croppie@1.0.2/dist/elm-croppie.css"/>
+    <script src="https://unpkg.com/elm-croppie@1.0.2/dist/elm-croppie.js"></script>
+    <script type="text/javascript" src="elm.js"></script>
+</head>
+<body>
+<div id="elm"></div>
+
+</body>
+<script type="text/javascript">
+    var elm = document.getElementById('elm');
+    var app = Elm.CropImage.CropImage.init({node: elm});
+
+    app.ports.croppie.subscribe((data) => {
+        ElmCroppie.port(data);
+    });
+</script>
+</html>
