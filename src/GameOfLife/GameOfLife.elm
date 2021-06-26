@@ -21,6 +21,7 @@ type Msg
     = ClickedCell Int Int
     | ClickedNextGeneration
     | ClickedRun
+    | ClickedStartPattern
     | Tick Time.Posix
 
 
@@ -126,11 +127,21 @@ update msg model =
         ClickedNextGeneration ->
             ( { model | grid = nextGeneration model.grid }, Cmd.none )
 
+        ClickedStartPattern ->
+            ( { model | grid = setPattern model.grid }, Cmd.none )
+
         ClickedRun ->
             ( { model | running = not model.running }, Cmd.none )
 
         Tick _ ->
             ( { model | grid = nextGeneration model.grid }, Cmd.none )
+
+
+setPattern : Matrix Cell -> Matrix Cell
+setPattern grid =
+    List.foldr (\( x, y ) g -> Matrix.set g x y Filled)
+        grid
+        [ ( 25, 25 ), ( 26, 25 ), ( 27, 25 ), ( 27, 26 ), ( 26, 27 ), ( 30, 25 ), ( 31, 25 ), ( 30, 26 ), ( 32, 26 ), ( 32, 27 ), ( 31, 27 ) ]
 
 
 view : Model -> Html Msg
@@ -177,6 +188,10 @@ viewControl : Bool -> Element Msg
 viewControl running =
     column []
         [ Input.button []
+            { onPress = Just ClickedStartPattern
+            , label = el [ Font.size 24, Border.width 1, Border.rounded 5, padding 5 ] <| text "Load Pattern"
+            }
+        , Input.button []
             { onPress = Just ClickedNextGeneration
             , label = el [ Font.size 24, Border.width 1, Border.rounded 5, padding 5 ] <| text "Next generation"
             }
