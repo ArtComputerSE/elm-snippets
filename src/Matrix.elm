@@ -131,11 +131,22 @@ pickY y arrays =
                             v :: pickY y tail
 
 
+{-| Apply a function on every element in a matrix.
+
+    Matrix.map (\n -> n * 2) [ [ 0, 0, 0 ], [ 0, 1, 2 ] ] => [ [ 0, 0, 0 ], [ 0, 2, 4 ] ]
+
+-}
 map : (a -> b) -> Matrix a -> Matrix b
 map function matrix =
     matrix |> Array.map (Array.map function)
 
 
+{-| Apply a function on every element with its x and y as first arguments.
+
+    Matrix.indexedMap (\x y _ -> (String.fromInt x + "," + String.fromInt y) [["","",""]["","",""]]
+    => [[ "0,0", "0,1", "0,2" ],[ "1,0", "1,1", "1,2" ] ]
+
+-}
 indexMap : (Int -> Int -> a -> b) -> Matrix a -> Matrix b
 indexMap function matrix =
     matrix |> Array.indexedMap (\x array -> Array.indexedMap (function x) array)
