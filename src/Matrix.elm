@@ -1,9 +1,10 @@
 module Matrix exposing
     ( Matrix
-    , empty, initialize
+    , empty, initialize, repeat
     , size, get, getXs, getYs
     , set
-    , indexMap, map
+    , map
+    , indexMap
     )
 
 {-| Two dimensional matrix backed by Array from the Elm core, the fast immutable array
@@ -17,7 +18,7 @@ implementation.
 
 # Creation
 
-@docs empty, initialize
+@docs empty, initialize, repeat
 
 
 # Query
@@ -28,6 +29,11 @@ implementation.
 # Manipulate
 
 @docs set
+
+
+# Transform
+
+@docs map, indexedMap
 
 -}
 
@@ -76,6 +82,13 @@ given its x and y.
 initialize : Int -> Int -> (Int -> Int -> a) -> Matrix a
 initialize sizeX sizeY fn =
     Array.initialize sizeX (\col -> Array.initialize sizeY (fn col))
+
+
+{-| Initialize a matrix, given desired size and the value for every cell.
+-}
+repeat : Int -> Int -> a -> Matrix a
+repeat sizeX sizeY value =
+    Array.repeat sizeX (Array.repeat sizeY value)
 
 
 {-| Set the cell at (x,y) to a new value. If the (x,y) is out of bounds, silently do nothing,

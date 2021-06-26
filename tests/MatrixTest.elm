@@ -81,6 +81,10 @@ suite =
             [ test "Contents depending on x, y" <|
                 \() -> Expect.equal (Array.fromList [ Array.fromList [ "0(0,0)0", "0(0,1)1", "0(0,2)2" ], Array.fromList [ "1(1,0)0", "1(1,1)1", "1(1,2)2" ] ]) (Matrix.indexMap indexedConvert twoByThree)
             ]
+        , describe "Initialize with repeat"
+            [ test "Zero initialize" <|
+                \() -> Expect.equal (Array.fromList [ Array.fromList [ 0, 0, 0 ], Array.fromList [ 0, 0, 0 ] ]) (Matrix.repeat 2 3 0)
+            ]
         ]
 
 
