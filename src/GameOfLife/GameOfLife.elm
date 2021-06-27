@@ -41,7 +41,7 @@ init _ =
 
 nextGeneration : Matrix Cell -> Matrix Cell
 nextGeneration grid =
-    Matrix.indexMap (cellDestiny grid) grid
+    Matrix.indexedMap (cellDestiny grid) grid
 
 
 
@@ -54,19 +54,19 @@ nextGeneration grid =
 cellDestiny : Matrix Cell -> Int -> Int -> Cell -> Cell
 cellDestiny grid x y value =
     let
-        neighbours =
+        neighbourCount =
             countNeighbours grid x y
     in
     case value of
         Empty ->
-            if neighbours == 3 then
+            if neighbourCount == 3 then
                 Filled
 
             else
                 Empty
 
         Filled ->
-            if neighbours == 2 || neighbours == 3 then
+            if neighbourCount == 2 || neighbourCount == 3 then
                 Filled
 
             else
@@ -76,18 +76,6 @@ cellDestiny grid x y value =
 countNeighbours : Matrix Cell -> Int -> Int -> Int
 countNeighbours grid x y =
     let
-        neighbourCoords : List ( Int, Int )
-        neighbourCoords =
-            [ ( x - 1, y - 1 )
-            , ( x - 1, y )
-            , ( x - 1, y + 1 )
-            , ( x, y - 1 )
-            , ( x, y + 1 )
-            , ( x + 1, y - 1 )
-            , ( x + 1, y )
-            , ( x + 1, y + 1 )
-            ]
-
         mayBeCellCount : Maybe Cell -> Int
         mayBeCellCount maybeCell =
             case maybeCell of
@@ -97,13 +85,7 @@ countNeighbours grid x y =
                 _ ->
                     0
     in
-    List.map
-        (\( r, c ) ->
-            Matrix.get grid r c
-                |> mayBeCellCount
-        )
-        neighbourCoords
-        |> List.sum
+    Matrix.neighbours grid x y |> Array.map mayBeCellCount |> Array.toList |> List.sum
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
