@@ -1,4 +1,4 @@
-module CropImage.ElmUIExample exposing (Model, Msg(..), main, update, view)
+module CropImage.ElmUIExample exposing (Model, Msg(..), clampOffset, main, update, view)
 
 import Browser
 import Element as Color exposing (Element, behindContent, centerX, centerY, clip, column, el, fill, height, html, htmlAttribute, layout, moveDown, moveRight, none, padding, px, row, text, width)
@@ -81,10 +81,15 @@ update msg model =
                     ( model, Cmd.none )
 
                 Dragging moveStart ->
-                    ( { model
-                        | dragState = Initial
-                        , offset = clampOffset moveStart moveEnd model.offset
-                      }
+                    ( case model.originalDimensions of
+                        Nothing ->
+                            model
+
+                        Just dimensions ->
+                            { model
+                                | dragState = Initial
+                                , offset = clampOffset (imageWidth dimensions.width model.zoom |> Basics.toFloat) moveStart moveEnd model.offset
+                            }
                     , Cmd.none
                     )
 
@@ -189,8 +194,8 @@ imageWidth originalWidth zoom =
     Basics.max sideLength ((Basics.round zoom * originalWidth) // 100)
 
 
-clampOffset : ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float )
-clampOffset moveStart moveEnd currentOffset =
+clampOffset : Float -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float )
+clampOffset zoomedWidth moveStart moveEnd currentOffset =
     let
         ( ox, oy ) =
             currentOffset
@@ -206,8 +211,14 @@ clampOffset moveStart moveEnd currentOffset =
 
         ( newX, newY ) =
             ( ox + dx, oy + dy )
+
+        zeroOrBelow value =
+            Basics.min 0.0 value
+
+        minimumOffsetX =
+            sideLength - zoomedWidth
     in
-    ( Basics.min 0.0 newX, Basics.min 0.0 newY )
+    ( Basics.clamp minimumOffsetX 0.0 newX, zeroOrBelow newY )
 
 
 main : Program () Model Msg
