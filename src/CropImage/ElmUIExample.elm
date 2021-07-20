@@ -26,7 +26,7 @@ type DragState
 type alias Model =
     { dragState : DragState
     , offset : ( Float, Float )
-    , previewImageDimensions : Maybe ImageDimensions
+    , originalDimensions : Maybe ImageDimensions
     , zoom : Float
     }
 
@@ -43,7 +43,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { dragState = Initial
       , offset = ( 0, 0 )
-      , previewImageDimensions = Nothing
+      , originalDimensions = Nothing
       , zoom = 100
       }
     , Cmd.none
@@ -67,9 +67,6 @@ update msg model =
 
                 Dragging ( sx, sy ) ->
                     let
-                        _ =
-                            Debug.log "mouse move" ( dx, dy )
-
                         ( dx, dy ) =
                             ( x - sx, y - sy )
 
@@ -78,39 +75,32 @@ update msg model =
                     in
                     ( { model | dragState = Dragging ( x, y ), offset = ( ox + dx, oy + dy ) }, Cmd.none )
 
-        MouseUpOrLeave ( x, y ) ->
+        MouseUpOrLeave moveEnd ->
             case model.dragState of
                 Initial ->
                     ( model, Cmd.none )
 
-                Dragging ( sx, sy ) ->
-                    let
-                        _ =
-                            Debug.log "mouse up" ( x, y )
-
-                        ( dx, dy ) =
-                            ( x - sx, y - sy )
-
-                        ( ox, oy ) =
-                            model.offset
-                    in
+                Dragging moveStart ->
                     ( { model
                         | dragState = Initial
-                        , offset = ( Basics.min 0.0 (ox + dx), Basics.min 0.0 (oy + dy) )
+                        , offset = clampOffset moveStart moveEnd model.offset
                       }
                     , Cmd.none
                     )
 
         PreviewImageLoaded imageDimensions ->
-            ( { model | previewImageDimensions = Just imageDimensions }, Cmd.none )
+            ( { model | originalDimensions = Just imageDimensions }, Cmd.none )
 
         SetZoom float ->
             ( { model | zoom = float }, Cmd.none )
 
 
-photoUrl : String
 photoUrl =
     "src/CropImage/images/kittens-1280x711.jpg"
+
+
+sideLength =
+    300
 
 
 decodeImageLoad : (ImageDimensions -> value) -> Decode.Decoder value
@@ -128,31 +118,27 @@ view model =
         ( ox, oy ) =
             model.offset
 
-        zoomFactor : Int
-        zoomFactor =
-            Basics.round model.zoom
-
-        imageWidth : Int -> String
-        imageWidth width =
-            String.fromInt ((zoomFactor * width) // 100) ++ "px"
+        imageWidthStr : Int -> Float -> String
+        imageWidthStr originalWidth zoom =
+            String.fromInt (imageWidth originalWidth zoom) ++ "px"
 
         theImage : Element Msg
         theImage =
             column [ moveDown oy, moveRight ox ]
-                (case model.previewImageDimensions of
+                (case model.originalDimensions of
                     Nothing ->
                         [ html <| img [ Html.Events.on "load" (decodeImageLoad PreviewImageLoaded), src photoUrl ] [] ]
 
                     Just dimensions ->
-                        [ html <| img [ style "max-width" (imageWidth dimensions.width), src photoUrl ] [] ]
+                        [ html <| img [ style "max-width" (imageWidthStr dimensions.width model.zoom), src photoUrl ] [] ]
                 )
     in
     layout [] <|
         column [ width fill, padding 10 ]
             [ column
                 [ Border.width 1
-                , width (px 300)
-                , height (px 300)
+                , width (px sideLength)
+                , height (px sideLength)
                 , behindContent theImage
                 , htmlAttribute <| Html.Events.Extra.Mouse.onDown (\event -> MouseDown event.clientPos)
                 , htmlAttribute <| Html.Events.Extra.Mouse.onMove (\event -> MouseMove event.clientPos)
@@ -162,35 +148,66 @@ view model =
                 , centerX
                 ]
                 []
-            , row
-                [ width fill
-                , Border.width 1
-                , width (px 300)
-                , centerX
-                ]
-                [ Input.slider
-                    [ height (px 30)
-                    , behindContent
-                        (el
-                            [ width fill
-                            , height (px 2)
-                            , centerY
-                            , Background.color <| Color.rgb255 128 128 128
-                            , Border.rounded 2
-                            ]
-                            none
-                        )
-                    ]
-                    { onChange = SetZoom
-                    , label = Input.labelAbove [] (text "Zoom")
-                    , min = 0
-                    , max = 100
-                    , step = Nothing
-                    , value = model.zoom
-                    , thumb = Input.defaultThumb
-                    }
-                ]
+            , zoomSlider model.zoom
             ]
+
+
+zoomSlider : Float -> Element Msg
+zoomSlider zoomValue =
+    row
+        [ width fill
+        , Border.width 1
+        , width (px sideLength)
+        , centerX
+        ]
+        [ Input.slider
+            [ height (px 30)
+            , behindContent
+                (el
+                    [ width fill
+                    , height (px 2)
+                    , centerY
+                    , Background.color <| Color.rgb255 128 128 128
+                    , Border.rounded 2
+                    ]
+                    none
+                )
+            ]
+            { onChange = SetZoom
+            , label = Input.labelAbove [] (text "Zoom")
+            , min = 0
+            , max = 100
+            , step = Nothing
+            , value = zoomValue
+            , thumb = Input.defaultThumb
+            }
+        ]
+
+
+imageWidth : Int -> Float -> Int
+imageWidth originalWidth zoom =
+    Basics.max sideLength ((Basics.round zoom * originalWidth) // 100)
+
+
+clampOffset : ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float )
+clampOffset moveStart moveEnd currentOffset =
+    let
+        ( ox, oy ) =
+            currentOffset
+
+        ( sx, sy ) =
+            moveStart
+
+        ( ex, ey ) =
+            moveEnd
+
+        ( dx, dy ) =
+            ( ex - sx, ey - sy )
+
+        ( newX, newY ) =
+            ( ox + dx, oy + dy )
+    in
+    ( Basics.min 0.0 newX, Basics.min 0.0 newY )
 
 
 main : Program () Model Msg
