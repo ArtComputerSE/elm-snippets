@@ -1,7 +1,7 @@
 module CropImage.ElmUIExample exposing (Model, Msg(..), clampOffset, main, update, view)
 
 import Browser
-import Element as Color exposing (Element, behindContent, centerX, centerY, clip, column, el, fill, height, html, htmlAttribute, layout, moveDown, moveRight, none, padding, px, row, text, width)
+import Element as Color exposing (Element, behindContent, centerX, centerY, clip, column, el, fill, height, html, htmlAttribute, layout, moveDown, moveRight, none, padding, px, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Input as Input
@@ -59,7 +59,7 @@ init _ =
     ( { dragState = Initial
       , offset = ( 0, 0 )
       , originalDimensions = Nothing
-      , zoom = 100
+      , zoom = 0
       }
     , Cmd.none
     )
@@ -109,14 +109,24 @@ update msg model =
                     )
 
         PreviewImageLoaded imageDimensions ->
-            ( { model | originalDimensions = Just imageDimensions }, Cmd.none )
+            ( { model | originalDimensions = Just imageDimensions, zoom = clampZoom imageDimensions.width 0 }, Cmd.none )
 
-        SetZoom float ->
-            ( { model | zoom = float }, Cmd.none )
+        SetZoom zoomValue ->
+            case model.originalDimensions of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just dimensions ->
+                    ( { model
+                        | zoom = clampZoom dimensions.width zoomValue
+                        , offset = clampOffset (imageWidth dimensions.width model.zoom |> Basics.toFloat) ( 0, 0 ) ( 0, 0 ) model.offset
+                      }
+                    , Cmd.none
+                    )
 
 
 photoUrl =
-    "https://picsum.photos/2000/3000"
+    "https://picsum.photos/2000/4096"
 
 
 sideLength =
@@ -154,7 +164,7 @@ view model =
                 )
     in
     layout [] <|
-        column [ width fill, padding 10 ]
+        column [ width fill, padding 10, spacing 5 ]
             [ column
                 [ Border.width 1
                 , width (px sideLength)
@@ -194,7 +204,7 @@ zoomSlider zoomValue =
                 )
             ]
             { onChange = SetZoom
-            , label = Input.labelAbove [] (text "Zoom")
+            , label = Input.labelAbove [ padding 5 ] (text "Zoom")
             , min = 0
             , max = 100
             , step = Nothing
@@ -207,6 +217,15 @@ zoomSlider zoomValue =
 imageWidth : Int -> Float -> Int
 imageWidth originalWidth zoom =
     Basics.max sideLength ((Basics.round zoom * originalWidth) // 100)
+
+
+clampZoom : Int -> Float -> Float
+clampZoom originalWidth setZoom =
+    if ((Basics.round setZoom * originalWidth) // 100) < sideLength then
+        sideLength / Basics.toFloat originalWidth * 100
+
+    else
+        setZoom
 
 
 clampOffset : Float -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> ( Float, Float )
