@@ -12,6 +12,21 @@ import Html.Events.Extra.Mouse
 import Json.Decode as Decode
 
 
+
+{-
+   Display a random image of size 2000 x 3000 in a 300 x 300 window.
+   Let the user pan the image by dragging and zooming with the slider.
+
+   Do not use any ports.
+   Use elm-ui for display and elm-pointer-events for mouse and touch events.
+   Clamp the offset so that the image is within limits.
+
+   Solution: put the image in a behindContent of a column with fixed width and height.
+   The column catches mouse and touch events and offset is calculated from that.
+
+-}
+
+
 type alias ImageDimensions =
     { width : Int
     , height : Int
@@ -25,8 +40,8 @@ type DragState
 
 type alias Model =
     { dragState : DragState
-    , offset : ( Float, Float )
     , originalDimensions : Maybe ImageDimensions
+    , offset : ( Float, Float )
     , zoom : Float
     }
 
@@ -101,7 +116,7 @@ update msg model =
 
 
 photoUrl =
-    "src/CropImage/images/kittens-1280x711.jpg"
+    "https://picsum.photos/2000/3000"
 
 
 sideLength =
