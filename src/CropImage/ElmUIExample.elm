@@ -19,12 +19,23 @@ import Json.Decode as Decode
 
    Do not use any ports.
    Use elm-ui for display and elm-pointer-events for mouse and touch events.
-   Clamp the offset so that the image is within limits.
+   Clamp the offset and zoom so that the image is within limits.
 
    Solution: put the image in a behindContent of a column with fixed width and height.
    The column catches mouse and touch events and offset is calculated from that.
 
+   To do this, the size of the image is needed. This is achieved by listening to image
+   loaded event.
+
 -}
+
+
+photoUrl =
+    "https://picsum.photos/2000/4096"
+
+
+sideLength =
+    300
 
 
 type alias ImageDimensions =
@@ -123,14 +134,6 @@ update msg model =
                       }
                     , Cmd.none
                     )
-
-
-photoUrl =
-    "https://picsum.photos/2000/4096"
-
-
-sideLength =
-    300
 
 
 decodeImageLoad : (ImageDimensions -> value) -> Decode.Decoder value
