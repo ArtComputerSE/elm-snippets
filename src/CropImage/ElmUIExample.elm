@@ -9,6 +9,7 @@ import Html exposing (img)
 import Html.Attributes exposing (src, style)
 import Html.Events
 import Html.Events.Extra.Mouse
+import Html.Events.Extra.Touch
 import Json.Decode as Decode
 
 
@@ -61,6 +62,9 @@ type Msg
     = MouseDown ( Float, Float )
     | MouseMove ( Float, Float )
     | MouseUpOrLeave ( Float, Float )
+    | TouchStart ( Float, Float )
+    | TouchMove ( Float, Float )
+    | TouchEnd ( Float, Float )
     | PreviewImageLoaded ImageDimensions
     | SetZoom Float
 
@@ -102,6 +106,46 @@ update msg model =
                     ( { model | dragState = Dragging ( x, y ), offset = ( ox + dx, oy + dy ) }, Cmd.none )
 
         MouseUpOrLeave moveEnd ->
+            case model.dragState of
+                Initial ->
+                    ( model, Cmd.none )
+
+                Dragging moveStart ->
+                    ( case model.originalDimensions of
+                        Nothing ->
+                            model
+
+                        Just dimensions ->
+                            { model
+                                | dragState = Initial
+                                , offset = clampOffset (imageWidth dimensions.width model.zoom |> Basics.toFloat) moveStart moveEnd model.offset
+                            }
+                    , Cmd.none
+                    )
+
+        TouchStart ( x, y ) ->
+            let
+                _ =
+                    Debug.log "mouse down" ( x, y )
+            in
+            ( { model | dragState = Dragging ( x, y ) }, Cmd.none )
+
+        TouchMove ( x, y ) ->
+            case model.dragState of
+                Initial ->
+                    ( model, Cmd.none )
+
+                Dragging ( sx, sy ) ->
+                    let
+                        ( dx, dy ) =
+                            ( x - sx, y - sy )
+
+                        ( ox, oy ) =
+                            model.offset
+                    in
+                    ( { model | dragState = Dragging ( x, y ), offset = ( ox + dx, oy + dy ) }, Cmd.none )
+
+        TouchEnd moveEnd ->
             case model.dragState of
                 Initial ->
                     ( model, Cmd.none )
@@ -165,6 +209,16 @@ view model =
                     Just dimensions ->
                         [ html <| img [ style "max-width" (imageWidthStr dimensions.width model.zoom), src photoUrl ] [] ]
                 )
+
+        touchCoordinates : Html.Events.Extra.Touch.Event -> ( Float, Float )
+        touchCoordinates touchEvent =
+            let
+                _ =
+                    Debug.log "touch" touchEvent.touches
+            in
+            List.head touchEvent.changedTouches
+                |> Maybe.map .clientPos
+                |> Maybe.withDefault ( 0, 0 )
     in
     layout [] <|
         column [ width fill, padding 10, spacing 5 ]
@@ -177,6 +231,9 @@ view model =
                 , htmlAttribute <| Html.Events.Extra.Mouse.onMove (\event -> MouseMove event.clientPos)
                 , htmlAttribute <| Html.Events.Extra.Mouse.onUp (\event -> MouseUpOrLeave event.clientPos)
                 , htmlAttribute <| Html.Events.Extra.Mouse.onLeave (\event -> MouseUpOrLeave event.clientPos)
+                , htmlAttribute <| Html.Events.Extra.Touch.onStart (\event -> TouchStart (touchCoordinates event))
+                , htmlAttribute <| Html.Events.Extra.Touch.onMove (\event -> TouchMove (touchCoordinates event))
+                , htmlAttribute <| Html.Events.Extra.Touch.onEnd (\event -> TouchEnd (touchCoordinates event))
                 , clip
                 , centerX
                 ]
