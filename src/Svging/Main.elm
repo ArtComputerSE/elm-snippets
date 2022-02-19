@@ -1,6 +1,7 @@
 module Svging.Main exposing (Model, Msg(..), init, initialModel, main)
 
 import Browser
+import Browser.Dom
 import Browser.Events
 import Dict exposing (Dict)
 import Element exposing (Element, column, rgb, text)
@@ -8,10 +9,12 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Json.Decode as Decode
 import Svg exposing (circle, line, svg)
 import Svg.Attributes exposing (cx, cy, fill, fillOpacity, height, r, stroke, strokeOpacity, transform, viewBox, width, x1, x2, y1, y2)
 import Svg.Events exposing (onClick, onMouseDown)
+import Task
 
 
 main =
@@ -29,10 +32,12 @@ type Msg
     | DragMove NodeId Bool Float Float
     | DragStop NodeId Float Float
     | SetZoom Float
+    | GotDomElement (Result Browser.Dom.Error Browser.Dom.Element)
 
 
 type alias Model =
     { scale : Float
+    , graphElementPosition : Position
     , clicked : Bool
     , dragState : DragState
     , nodes : Dict NodeId Node
@@ -68,12 +73,13 @@ type DragState
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( initialModel, Cmd.none )
+    ( initialModel, Browser.Dom.getElement graphId |> Task.attempt GotDomElement )
 
 
 initialModel : Model
 initialModel =
     { scale = 1.0
+    , graphElementPosition = Position 0 0
     , clicked = False
     , dragState = Static
     , nodes = Dict.fromList [ ( 1, node1 ), ( 2, node2 ) ]
@@ -115,7 +121,7 @@ update msg model =
         DragMove nodeId isDown fractionX fractionY ->
             let
                 newNode =
-                    Node (Position (fractionX * 100) (fractionY * 100))
+                    Node (Position (fractionX * 100) (fractionY * 100 - 500 / model.graphElementPosition.y))
             in
             ( { model
                 | nodes = Dict.insert nodeId newNode model.nodes
@@ -132,7 +138,7 @@ update msg model =
         DragStop nodeId fractionX fractionY ->
             let
                 newNode =
-                    Node (Position (fractionX * 100) (fractionY * 100))
+                    Node (Position (fractionX * 100) (fractionY * 100 - 500 / model.graphElementPosition.y))
             in
             ( { model | dragState = Static, nodes = Dict.insert nodeId newNode model.nodes }
             , Cmd.none
@@ -140,6 +146,14 @@ update msg model =
 
         SetZoom float ->
             ( { model | scale = float }, Cmd.none )
+
+        GotDomElement result ->
+            case result of
+                Err _ ->
+                    ( model, Cmd.none )
+
+                Ok domElement ->
+                    ( { model | graphElementPosition = Position domElement.element.x domElement.element.y }, Cmd.none )
 
 
 getNode nodes nodeId =
@@ -190,18 +204,24 @@ viewZoomControl model =
         }
 
 
+graphId =
+    "graph"
+
+
 viewGraph : Model -> Element Msg
 viewGraph model =
     Element.html <|
-        svg
-            [ width "500"
-            , height "500"
-            , viewBox "0 0 100 100"
-            ]
-            [ Svg.g [ transform (scale model.scale) ]
-                (drawEdges model.edges model.nodes
-                    ++ drawNodes model.nodes
-                )
+        Html.div [ Html.Attributes.id graphId ]
+            [ svg
+                [ width "500"
+                , height "500"
+                , viewBox "0 0 100 100"
+                ]
+                [ Svg.g [ transform (scale model.scale) ]
+                    (drawEdges model.edges model.nodes
+                        ++ drawNodes model.nodes
+                    )
+                ]
             ]
 
 
