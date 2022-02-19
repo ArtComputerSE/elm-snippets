@@ -12,7 +12,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
 import Svg exposing (circle, line, svg)
-import Svg.Attributes exposing (cx, cy, fill, fillOpacity, height, r, stroke, strokeOpacity, transform, viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, fillOpacity, height, r, stroke, strokeOpacity, strokeWidth, transform, viewBox, width, x1, x2, y1, y2)
 import Svg.Events exposing (onClick, onMouseDown)
 import Task
 
@@ -29,8 +29,8 @@ main =
 type Msg
     = ClickedCircle
     | DragStart NodeId
-    | DragMove NodeId Bool Float Float
-    | DragStop NodeId Float Float
+    | DragMove NodeId Bool Position
+    | DragStop NodeId Position
     | SetZoom Float
     | GotDomElement (Result Browser.Dom.Error Browser.Dom.Element)
 
@@ -68,7 +68,7 @@ type alias Edge =
 
 type DragState
     = Static
-    | Moving NodeId Float Float
+    | Moving NodeId
 
 
 init : () -> ( Model, Cmd Msg )
@@ -110,24 +110,20 @@ update msg model =
             ( { model | clicked = not model.clicked }, Cmd.none )
 
         DragStart nodeId ->
-            let
-                node =
-                    getNode model.nodes nodeId
-            in
-            ( { model | dragState = Moving nodeId (node.position.x / 100) (node.position.y / 100) }
+            ( { model | dragState = Moving nodeId }
             , Cmd.none
             )
 
-        DragMove nodeId isDown fractionX fractionY ->
+        DragMove nodeId isDown pos ->
             let
                 newNode =
-                    Node (Position (fractionX * 100) (fractionY * 100 - 500 / model.graphElementPosition.y))
+                    Node (fromScreen pos model.scale model.graphElementPosition)
             in
             ( { model
                 | nodes = Dict.insert nodeId newNode model.nodes
                 , dragState =
                     if isDown then
-                        Moving nodeId fractionX fractionY
+                        Moving nodeId
 
                     else
                         Static
@@ -135,10 +131,10 @@ update msg model =
             , Cmd.none
             )
 
-        DragStop nodeId fractionX fractionY ->
+        DragStop nodeId pos ->
             let
                 newNode =
-                    Node (Position (fractionX * 100) (fractionY * 100 - 500 / model.graphElementPosition.y))
+                    Node (fromScreen pos model.scale model.graphElementPosition)
             in
             ( { model | dragState = Static, nodes = Dict.insert nodeId newNode model.nodes }
             , Cmd.none
@@ -158,6 +154,35 @@ update msg model =
 
 getNode nodes nodeId =
     Dict.get nodeId nodes |> Maybe.withDefault (Node (Position 0 0))
+
+
+graphPixelWidth =
+    500
+
+
+graphPixelHeight =
+    500
+
+
+fromScreen : Position -> Float -> Position -> Position
+fromScreen position zoom graphElementPosition =
+    let
+        offsetX =
+            if graphElementPosition.x == 0 then
+                0
+
+            else
+                graphPixelWidth / graphElementPosition.x
+
+        offsetY =
+            if graphElementPosition.y == 0 then
+                0
+
+            else
+                graphPixelHeight / graphElementPosition.y
+    in
+    Position ((position.x * 100 - offsetX) / zoom)
+        ((position.y * 100 - offsetY) / zoom)
 
 
 
@@ -194,7 +219,7 @@ viewZoomControl model =
         { onChange = SetZoom
         , label =
             Input.labelAbove []
-                (text "Zoom")
+                (text <| "Zoom " ++ String.fromFloat model.scale)
         , min = 0.1
         , max = 5
         , step = Nothing
@@ -213,8 +238,8 @@ viewGraph model =
     Element.html <|
         Html.div [ Html.Attributes.id graphId ]
             [ svg
-                [ width "500"
-                , height "500"
+                [ width <| String.fromInt graphPixelWidth
+                , height <| String.fromInt graphPixelHeight
                 , viewBox "0 0 100 100"
                 ]
                 [ Svg.g [ transform (scale model.scale) ]
@@ -250,6 +275,7 @@ drawEdge edge nodes =
         , x2 <| String.fromFloat toNode.position.x
         , y2 <| String.fromFloat toNode.position.y
         , stroke "black"
+        , strokeWidth "0.1"
         ]
         []
 
@@ -266,6 +292,7 @@ drawNode nodeId node =
         , cy <| String.fromFloat node.position.y
         , r "5"
         , stroke "black"
+        , strokeWidth "0.4"
         , strokeOpacity "0.5"
         , fill "rgb(216,196,30)"
         , fillOpacity "1"
@@ -291,55 +318,30 @@ subscriptions model =
         Static ->
             Sub.none
 
-        Moving id _ _ ->
+        Moving id ->
             Sub.batch
-                [ Browser.Events.onMouseMove (Decode.map3 (DragMove id) decodeButtons decodeFractionX decodeFractionY)
-                , Browser.Events.onMouseUp (Decode.map2 (DragStop id) decodeFractionX decodeFractionY)
+                [ Browser.Events.onMouseMove (Decode.map2 (DragMove id) decodeButtons decodePosition)
+                , Browser.Events.onMouseUp (Decode.map (DragStop id) decodePosition)
                 ]
 
 
-
-{- The goal here is to get (mouse x / window width) on each mouse event. So if
-   the mouse is at 500px and the screen is 1000px wide, we should get 0.5 from this.
-
-   Getting the mouse x is not too hard, but getting window width is a bit tricky.
-   We want the window.innerWidth value, which happens to be available at:
-
-       event.currentTarget.defaultView.innerWidth
-
-   The value at event.currentTarget is the document in these cases, but this will
-   not work if you have a <section> or a <div> with a normal elm/html event handler.
-   So if currentTarget is NOT the document, you should instead get the value at:
-
-       event.currentTarget.ownerDocument.defaultView.innerWidth
-                           ^^^^^^^^^^^^^
--}
+decodePosition : Decode.Decoder Position
+decodePosition =
+    Decode.map2 Position decodeFractionX decodeFractionY
 
 
 decodeFractionX : Decode.Decoder Float
 decodeFractionX =
     Decode.map2 (/)
         (Decode.field "pageX" Decode.float)
-        (Decode.succeed 500)
+        (Decode.succeed graphPixelWidth)
 
 
 decodeFractionY : Decode.Decoder Float
 decodeFractionY =
     Decode.map2 (/)
         (Decode.field "pageY" Decode.float)
-        (Decode.succeed 500)
-
-
-
-{- What happens when the user is dragging, but the "mouse up" occurs outside
-   the browser window? We need to stop listening for mouse movement and end the
-   drag. We use MouseEvent.buttons to detect this:
-
-       https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
-
-   The "buttons" value is 1 when "left-click" is pressed, so we use that to
-   detect zombie drags.
--}
+        (Decode.succeed graphPixelHeight)
 
 
 decodeButtons : Decode.Decoder Bool
