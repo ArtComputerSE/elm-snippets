@@ -269,6 +269,16 @@ drawEdge edge nodes =
         toNode =
             getNode nodes edge.toNode
 
+        pathPoints fn tn =
+            "M"
+                ++ String.fromFloat fn.position.x
+                ++ ","
+                ++ String.fromFloat fn.position.y
+                ++ " L"
+                ++ String.fromFloat tn.position.x
+                ++ ","
+                ++ String.fromFloat tn.position.y
+
         idString =
             "edge" ++ String.fromInt edge.fromNode ++ "-" ++ String.fromInt edge.toNode
     in
@@ -276,14 +286,11 @@ drawEdge edge nodes =
         [ path
             [ id idString
             , d <|
-                "M"
-                    ++ String.fromFloat fromNode.position.x
-                    ++ ","
-                    ++ String.fromFloat fromNode.position.y
-                    ++ " L"
-                    ++ String.fromFloat toNode.position.x
-                    ++ ","
-                    ++ String.fromFloat toNode.position.y
+                if fromNode.position.x > toNode.position.x then
+                    pathPoints toNode fromNode
+
+                else
+                    pathPoints fromNode toNode
             , stroke "black"
             , strokeWidth "0.1"
             ]
@@ -292,7 +299,7 @@ drawEdge edge nodes =
             [ Svg.textPath
                 [ xlinkHref ("#" ++ idString)
                 , startOffset "20%"
-                , style "font-size:10"
+                , style "font-size:6"
                 ]
                 [ Svg.text "hej" ]
             ]
