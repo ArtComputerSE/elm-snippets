@@ -164,25 +164,18 @@ graphPixelHeight =
     500
 
 
+viewPortWidth =
+    1000
+
+
+viewPortHeight =
+    1000
+
+
 fromScreen : Position -> Float -> Position -> Position
 fromScreen position zoom graphElementPosition =
-    let
-        offsetX =
-            if graphElementPosition.x == 0 then
-                0
-
-            else
-                graphPixelWidth / graphElementPosition.x
-
-        offsetY =
-            if graphElementPosition.y == 0 then
-                0
-
-            else
-                graphPixelHeight / graphElementPosition.y
-    in
-    Position ((position.x * 100 - offsetX) / zoom)
-        ((position.y * 100 - offsetY) / zoom)
+    Position ((position.x - graphElementPosition.x) / graphPixelWidth * viewPortWidth / zoom)
+        ((position.y - graphElementPosition.y) / graphPixelWidth * viewPortHeight / zoom)
 
 
 
@@ -221,7 +214,7 @@ viewZoomControl model =
             Input.labelAbove []
                 (text <| "Zoom " ++ String.fromFloat model.scale)
         , min = 0.1
-        , max = 5
+        , max = 10
         , step = Nothing
         , value = model.scale
         , thumb =
@@ -240,7 +233,7 @@ viewGraph model =
             [ svg
                 [ width <| String.fromInt graphPixelWidth
                 , height <| String.fromInt graphPixelHeight
-                , viewBox "0 0 100 100"
+                , viewBox <| "0 0 " ++ String.fromInt viewPortWidth ++ " " ++ String.fromInt viewPortHeight
                 ]
                 [ Svg.g [ transform (scale model.scale) ]
                     (drawEdges model.edges model.nodes
@@ -328,16 +321,6 @@ drawNode nodeId node =
         []
 
 
-
--- Subscription
-{- We listen for the "mousemove" and "mouseup" events for the whole window.
-   This way we catch all events, even if they are not on our drag zone.
-
-   Listening for mouse moves is costly though, so we only listen if there is an
-   ongoing drag.
--}
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.dragState of
@@ -358,16 +341,12 @@ decodePosition =
 
 decodeFractionX : Decode.Decoder Float
 decodeFractionX =
-    Decode.map2 (/)
-        (Decode.field "pageX" Decode.float)
-        (Decode.succeed graphPixelWidth)
+    Decode.field "pageX" Decode.float
 
 
 decodeFractionY : Decode.Decoder Float
 decodeFractionY =
-    Decode.map2 (/)
-        (Decode.field "pageY" Decode.float)
-        (Decode.succeed graphPixelHeight)
+    Decode.field "pageY" Decode.float
 
 
 decodeButtons : Decode.Decoder Bool
