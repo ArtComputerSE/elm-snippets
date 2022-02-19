@@ -11,8 +11,8 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Json.Decode as Decode
-import Svg exposing (circle, line, svg)
-import Svg.Attributes exposing (cx, cy, fill, fillOpacity, height, r, stroke, strokeOpacity, strokeWidth, transform, viewBox, width, x1, x2, y1, y2)
+import Svg exposing (circle, path, svg)
+import Svg.Attributes exposing (cx, cy, d, fill, fillOpacity, height, id, r, startOffset, stroke, strokeOpacity, strokeWidth, style, transform, viewBox, width, xlinkHref)
 import Svg.Events exposing (onClick, onMouseDown)
 import Task
 
@@ -268,16 +268,35 @@ drawEdge edge nodes =
 
         toNode =
             getNode nodes edge.toNode
+
+        idString =
+            "edge" ++ String.fromInt edge.fromNode ++ "-" ++ String.fromInt edge.toNode
     in
-    line
-        [ x1 <| String.fromFloat fromNode.position.x
-        , y1 <| String.fromFloat fromNode.position.y
-        , x2 <| String.fromFloat toNode.position.x
-        , y2 <| String.fromFloat toNode.position.y
-        , stroke "black"
-        , strokeWidth "0.1"
+    Svg.g []
+        [ path
+            [ id idString
+            , d <|
+                "M"
+                    ++ String.fromFloat fromNode.position.x
+                    ++ ","
+                    ++ String.fromFloat fromNode.position.y
+                    ++ " L"
+                    ++ String.fromFloat toNode.position.x
+                    ++ ","
+                    ++ String.fromFloat toNode.position.y
+            , stroke "black"
+            , strokeWidth "0.1"
+            ]
+            []
+        , Svg.text_ []
+            [ Svg.textPath
+                [ xlinkHref ("#" ++ idString)
+                , startOffset "20%"
+                , style "font-size:10"
+                ]
+                [ Svg.text "hej" ]
+            ]
         ]
-        []
 
 
 drawNodes : Dict NodeId Node -> List (Svg.Svg Msg)
