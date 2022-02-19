@@ -113,8 +113,13 @@ update msg model =
             )
 
         DragMove nodeId isDown fractionX fractionY ->
+            let
+                newNode =
+                    Node (Position (fractionX * 100) (fractionY * 100))
+            in
             ( { model
-                | dragState =
+                | nodes = Dict.insert nodeId newNode model.nodes
+                , dragState =
                     if isDown then
                         Moving nodeId fractionX fractionY
 
@@ -194,8 +199,8 @@ viewGraph model =
             , viewBox "0 0 100 100"
             ]
             [ Svg.g [ transform (scale model.scale) ]
-                (drawEdges model.dragState model.edges model.nodes
-                    ++ drawNodes model.dragState model.nodes
+                (drawEdges model.edges model.nodes
+                    ++ drawNodes model.nodes
                 )
             ]
 
@@ -205,46 +210,40 @@ scale zoom =
     "scale(" ++ String.fromFloat zoom ++ ", " ++ String.fromFloat zoom ++ ")"
 
 
-drawEdges : DragState -> List Edge -> Dict NodeId Node -> List (Svg.Svg Msg)
-drawEdges dragState edges dict =
-    List.map (\e -> drawEdge dragState e dict) edges
+drawEdges : List Edge -> Dict NodeId Node -> List (Svg.Svg Msg)
+drawEdges edges dict =
+    List.map (\e -> drawEdge e dict) edges
 
 
-drawEdge : DragState -> Edge -> Dict NodeId Node -> Svg.Svg Msg
-drawEdge dragState edge nodes =
+drawEdge : Edge -> Dict NodeId Node -> Svg.Svg Msg
+drawEdge edge nodes =
     let
-        fromPos =
-            nodePostion edge.fromNode fromNode dragState
-
         fromNode =
             getNode nodes edge.fromNode
-
-        toPos =
-            nodePostion edge.toNode toNode dragState
 
         toNode =
             getNode nodes edge.toNode
     in
     line
-        [ x1 <| String.fromFloat fromPos.x
-        , y1 <| String.fromFloat fromPos.y
-        , x2 <| String.fromFloat toPos.x
-        , y2 <| String.fromFloat toPos.y
+        [ x1 <| String.fromFloat fromNode.position.x
+        , y1 <| String.fromFloat fromNode.position.y
+        , x2 <| String.fromFloat toNode.position.x
+        , y2 <| String.fromFloat toNode.position.y
         , stroke "black"
         ]
         []
 
 
-drawNodes : DragState -> Dict NodeId Node -> List (Svg.Svg Msg)
-drawNodes dragState dict =
-    Dict.toList dict |> List.map (\( id, node ) -> drawNode dragState id node)
+drawNodes : Dict NodeId Node -> List (Svg.Svg Msg)
+drawNodes dict =
+    Dict.toList dict |> List.map (\( id, node ) -> drawNode id node)
 
 
-drawNode : DragState -> NodeId -> Node -> Svg.Svg Msg
-drawNode dragState nodeId node =
+drawNode : NodeId -> Node -> Svg.Svg Msg
+drawNode nodeId node =
     circle
-        [ cx <| String.fromFloat (nodePostion nodeId node dragState).x
-        , cy <| String.fromFloat (nodePostion nodeId node dragState).y
+        [ cx <| String.fromFloat node.position.x
+        , cy <| String.fromFloat node.position.y
         , r "5"
         , stroke "black"
         , strokeOpacity "0.5"
@@ -254,20 +253,6 @@ drawNode dragState nodeId node =
         , onMouseDown (DragStart nodeId)
         ]
         []
-
-
-nodePostion : NodeId -> Node -> DragState -> Position
-nodePostion nodeId node dragState =
-    case dragState of
-        Static ->
-            Position node.position.x node.position.y
-
-        Moving id x y ->
-            if id == nodeId then
-                Position (x * 100) (y * 100)
-
-            else
-                Position node.position.x node.position.y
 
 
 
