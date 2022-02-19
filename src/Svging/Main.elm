@@ -3,7 +3,11 @@ module Svging.Main exposing (Model, Msg(..), init, initialModel, main)
 import Browser
 import Browser.Events
 import Dict exposing (Dict)
-import Html exposing (Html, div)
+import Element exposing (Element, column, rgb, text)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Input as Input
+import Html exposing (Html)
 import Json.Decode as Decode
 import Svg exposing (circle, line, svg)
 import Svg.Attributes exposing (cx, cy, fill, fillOpacity, height, r, stroke, strokeOpacity, transform, viewBox, width, x1, x2, y1, y2)
@@ -24,10 +28,12 @@ type Msg
     | DragStart NodeId
     | DragMove NodeId Bool Float Float
     | DragStop NodeId Float Float
+    | SetZoom Float
 
 
 type alias Model =
-    { clicked : Bool
+    { scale : Float
+    , clicked : Bool
     , dragState : DragState
     , nodes : Dict NodeId Node
     , edges : List Edge
@@ -67,7 +73,8 @@ init _ =
 
 initialModel : Model
 initialModel =
-    { clicked = False
+    { scale = 1.0
+    , clicked = False
     , dragState = Static
     , nodes = Dict.fromList [ ( 1, node1 ), ( 2, node2 ) ]
     , edges = [ Edge 1 2 ]
@@ -126,6 +133,9 @@ update msg model =
             , Cmd.none
             )
 
+        SetZoom float ->
+            ( { model | scale = float }, Cmd.none )
+
 
 getNode nodes nodeId =
     Dict.get nodeId nodes |> Maybe.withDefault (Node (Position 0 0))
@@ -137,18 +147,62 @@ getNode nodes nodeId =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ svg
+    Element.layoutWith { options = [] }
+        []
+        (column []
+            [ viewZoomControl model
+            , viewGraph model
+            ]
+        )
+
+
+viewZoomControl : Model -> Element Msg
+viewZoomControl model =
+    Input.slider
+        [ Element.height (Element.px 30)
+        , Element.width (Element.px 100)
+        , Element.behindContent
+            (Element.el
+                [ Element.width Element.fill
+                , Element.height (Element.px 5)
+                , Element.centerY
+                , Background.color (rgb 0 0 0)
+                , Border.rounded 2
+                ]
+                Element.none
+            )
+        ]
+        { onChange = SetZoom
+        , label =
+            Input.labelAbove []
+                (text "Zoom")
+        , min = 0.1
+        , max = 5
+        , step = Nothing
+        , value = model.scale
+        , thumb =
+            Input.defaultThumb
+        }
+
+
+viewGraph : Model -> Element Msg
+viewGraph model =
+    Element.html <|
+        svg
             [ width "500"
             , height "500"
             , viewBox "0 0 100 100"
             ]
-            [ Svg.g [ transform "scale(1, 1)" ]
+            [ Svg.g [ transform (scale model.scale) ]
                 (drawEdges model.dragState model.edges model.nodes
                     ++ drawNodes model.dragState model.nodes
                 )
             ]
-        ]
+
+
+scale : Float -> String
+scale zoom =
+    "scale(" ++ String.fromFloat zoom ++ ", " ++ String.fromFloat zoom ++ ")"
 
 
 drawEdges : DragState -> List Edge -> Dict NodeId Node -> List (Svg.Svg Msg)
