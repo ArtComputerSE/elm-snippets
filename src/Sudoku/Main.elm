@@ -7,8 +7,12 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Json.Decode as Decode
+import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode
 import Matrix exposing (Matrix)
 import Set exposing (Set)
+import Sudoku.Port exposing (setStorage)
 
 
 main =
@@ -37,10 +41,13 @@ type Msg
     | PressedResetCell Cell
 
 
-init : () -> ( Model, Cmd msg )
-init _ =
-    ( { grid = Matrix.initialize 9 9 initCell
-      }
+type alias Flags =
+    String
+
+
+init : Flags -> ( Model, Cmd msg )
+init flags =
+    ( restoreModel flags
     , Cmd.none
     )
 
@@ -80,11 +87,86 @@ update msg model =
 
                 newCell =
                     { currentCell | options = newSet }
+
+                newModel =
+                    checkGrid { model | grid = Matrix.set model.grid x y newCell }
             in
-            ( checkGrid { model | grid = Matrix.set model.grid x y newCell }, Cmd.none )
+            ( newModel, saveModel newModel )
 
         PressedResetCell cell ->
-            ( checkGrid { model | grid = Matrix.set model.grid cell.row cell.col (initCell cell.row cell.col) }, Cmd.none )
+            let
+                newModel =
+                    checkGrid { model | grid = Matrix.set model.grid cell.row cell.col (initCell cell.row cell.col) }
+            in
+            ( newModel, saveModel newModel )
+
+
+saveModel : Model -> Cmd msg
+saveModel model =
+    setStorage (encodeModel model)
+
+
+restoreModel : String -> Model
+restoreModel string =
+    case Decode.decodeString decodeModel string of
+        Ok model ->
+            model
+
+        Err _ ->
+            { grid = Matrix.initialize 9 9 initCell
+            }
+
+
+encodeModel : Model -> Encode.Value
+encodeModel model =
+    Encode.object
+        [ ( "grid", encodeGrid model.grid )
+        ]
+
+
+decodeModel : Decode.Decoder Model
+decodeModel =
+    Decode.succeed Model
+        |> required "grid" decodeGrid
+
+
+encodeGrid : Matrix Cell -> Encode.Value
+encodeGrid matrix =
+    Encode.array encodeRow matrix
+
+
+decodeGrid : Decode.Decoder (Matrix Cell)
+decodeGrid =
+    Decode.array decodeRow
+
+
+encodeRow : Array Cell -> Encode.Value
+encodeRow cells =
+    Encode.array encodeCell cells
+
+
+decodeRow : Decode.Decoder (Array Cell)
+decodeRow =
+    Decode.array decodeCell
+
+
+encodeCell : Cell -> Encode.Value
+encodeCell cell =
+    Encode.object
+        [ ( "row", Encode.int cell.row )
+        , ( "col", Encode.int cell.col )
+        , ( "options", Encode.list Encode.int (Set.toList cell.options) )
+        , ( "conflict", Encode.bool cell.conflict )
+        ]
+
+
+decodeCell : Decode.Decoder Cell
+decodeCell =
+    Decode.succeed Cell
+        |> required "row" Decode.int
+        |> required "col" Decode.int
+        |> required "options" (Decode.list Decode.int |> Decode.map Set.fromList)
+        |> required "conflict" Decode.bool
 
 
 type alias SingelCell =
