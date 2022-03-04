@@ -2,7 +2,8 @@ module Sudoku.Main exposing (Model, Msg(..), init, main, subscriptions, update, 
 
 import Array exposing (Array)
 import Browser
-import Element exposing (Element, centerX, centerY, column, el, height, padding, px, rgb, row, text, width)
+import Element exposing (Element, centerX, centerY, column, el, fill, height, padding, px, rgb, row, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -25,7 +26,14 @@ main =
 
 
 type alias Model =
-    { grid : Matrix Cell }
+    { viewMode : ViewMode
+    , grid : Matrix Cell
+    }
+
+
+type ViewMode
+    = SetUp
+    | Solve
 
 
 type alias Cell =
@@ -33,12 +41,16 @@ type alias Cell =
     , col : Int
     , options : Set Int
     , conflict : Bool
+    , constant : Bool
     }
 
 
 type Msg
     = ClickedCell Int Int Int
     | PressedResetCell Cell
+    | PressedDone
+    | PressedSetUp
+    | ChangedSetUpCell Cell String
 
 
 type alias Flags =
@@ -56,8 +68,9 @@ initCell : Int -> Int -> Cell
 initCell row col =
     { row = row
     , col = col
-    , options = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    , options = Set.empty
     , conflict = False
+    , constant = False
     }
 
 
@@ -67,7 +80,34 @@ emptyCell =
     , col = 0
     , options = Set.empty
     , conflict = False
+    , constant = True
     }
+
+
+resetNonConstant : Matrix Cell -> Matrix Cell
+resetNonConstant matrix =
+    Matrix.map
+        (\c ->
+            if c.constant then
+                c
+
+            else
+                { c | options = Set.empty }
+        )
+        matrix
+
+
+initNonConstant : Matrix Cell -> Matrix Cell
+initNonConstant matrix =
+    Matrix.map
+        (\c ->
+            if c.constant then
+                c
+
+            else
+                { c | options = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ] }
+        )
+        matrix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -100,6 +140,38 @@ update msg model =
             in
             ( newModel, saveModel newModel )
 
+        PressedDone ->
+            ( checkGrid { model | viewMode = Solve, grid = initNonConstant model.grid }, Cmd.none )
+
+        PressedSetUp ->
+            ( { model | viewMode = SetUp, grid = resetNonConstant model.grid }, Cmd.none )
+
+        ChangedSetUpCell cell string ->
+            let
+                defaultCell =
+                    { cell | options = Set.empty, constant = False }
+
+                defaultModel =
+                    { model | grid = Matrix.set model.grid cell.row cell.col defaultCell }
+            in
+            case string |> String.trim |> String.toInt of
+                Nothing ->
+                    ( defaultModel, Cmd.none )
+
+                Just n ->
+                    if n < 0 || n > 9 then
+                        ( defaultModel, Cmd.none )
+
+                    else
+                        let
+                            newCell =
+                                { cell | options = Set.fromList [ n ], constant = True }
+
+                            newModel =
+                                { model | grid = Matrix.set model.grid cell.row cell.col newCell }
+                        in
+                        ( newModel, saveModel newModel )
+
 
 saveModel : Model -> Cmd msg
 saveModel model =
@@ -113,21 +185,48 @@ restoreModel string =
             model
 
         Err _ ->
-            { grid = Matrix.initialize 9 9 initCell
+            { viewMode = SetUp
+            , grid = Matrix.initialize 9 9 initCell
             }
 
 
 encodeModel : Model -> Encode.Value
 encodeModel model =
     Encode.object
-        [ ( "grid", encodeGrid model.grid )
+        [ ( "viewMode", encodeViewMode model.viewMode )
+        , ( "grid", encodeGrid model.grid )
         ]
 
 
 decodeModel : Decode.Decoder Model
 decodeModel =
     Decode.succeed Model
+        |> required "viewMode" decodeViewMode
         |> required "grid" decodeGrid
+
+
+encodeViewMode : ViewMode -> Encode.Value
+encodeViewMode viewMode =
+    case viewMode of
+        SetUp ->
+            Encode.string "SetUp"
+
+        Solve ->
+            Encode.string "Solve"
+
+
+decodeViewMode : Decode.Decoder ViewMode
+decodeViewMode =
+    Decode.string
+        |> Decode.andThen
+            (\s ->
+                case s of
+                    "SetUp" ->
+                        Decode.succeed SetUp
+
+                    _ ->
+                        Decode.succeed Solve
+            )
 
 
 encodeGrid : Matrix Cell -> Encode.Value
@@ -157,6 +256,7 @@ encodeCell cell =
         , ( "col", Encode.int cell.col )
         , ( "options", Encode.list Encode.int (Set.toList cell.options) )
         , ( "conflict", Encode.bool cell.conflict )
+        , ( "constant", Encode.bool cell.constant )
         ]
 
 
@@ -167,6 +267,7 @@ decodeCell =
         |> required "col" Decode.int
         |> required "options" (Decode.list Decode.int |> Decode.map Set.fromList)
         |> required "conflict" Decode.bool
+        |> required "constant" Decode.bool
 
 
 type alias SingelCell =
@@ -246,18 +347,85 @@ view model =
 
 viewAll : Model -> Element Msg
 viewAll model =
-    viewGrid model.grid
+    case model.viewMode of
+        SetUp ->
+            viewSetUp model.grid
+
+        Solve ->
+            viewSolve model.grid
 
 
-viewGrid : Matrix Cell -> Element Msg
-viewGrid grid =
+viewSetUp : Matrix Cell -> Element Msg
+viewSetUp grid =
     column []
-        [ row [] [ viewSquare grid 0 0, viewSquare grid 0 3, viewSquare grid 0 6 ]
+        [ row [ width fill, padding 5 ]
+            [ el [ centerX ] <| text "Set up"
+            , Input.button buttonAttr
+                { onPress = Just PressedDone
+                , label = text "Done"
+                }
+            ]
+        , row [] [ viewSetUpSquare grid 0 0, viewSetUpSquare grid 0 3, viewSetUpSquare grid 0 6 ]
+        , row [] [ viewSetUpSquare grid 3 0, viewSetUpSquare grid 3 3, viewSetUpSquare grid 3 6 ]
+        , row [] [ viewSetUpSquare grid 6 0, viewSetUpSquare grid 6 3, viewSetUpSquare grid 6 6 ]
+        ]
+
+
+buttonAttr : List (Element.Attribute msg)
+buttonAttr =
+    [ Border.rounded 5, Border.color grey, Border.width 1, padding 5, Background.color lightRed ]
+
+
+viewSetUpSquare : Matrix Cell -> Int -> Int -> Element Msg
+viewSetUpSquare grid sr sc =
+    let
+        getCell r c =
+            Matrix.get grid r c |> Maybe.withDefault emptyCell
+    in
+    column [ Border.width 2, Border.color blue ]
+        [ row [] [ viewSetUpCell (getCell sr sc), viewSetUpCell (getCell sr (sc + 1)), viewSetUpCell (getCell sr (sc + 2)) ]
+        , row [] [ viewSetUpCell (getCell (sr + 1) sc), viewSetUpCell (getCell (sr + 1) (sc + 1)), viewSetUpCell (getCell (sr + 1) (sc + 2)) ]
+        , row [] [ viewSetUpCell (getCell (sr + 2) sc), viewSetUpCell (getCell (sr + 2) (sc + 1)), viewSetUpCell (getCell (sr + 2) (sc + 2)) ]
+        ]
+
+
+viewSetUpCell : Cell -> Element Msg
+viewSetUpCell cell =
+    let
+        label =
+            Set.toList cell.options |> List.head |> Maybe.map String.fromInt |> Maybe.withDefault " "
+    in
+    column
+        [ width (px 100)
+        , height (px 94)
+        , padding 5
+        , Border.width 1
+        , Border.color grey
+        , Font.center
+        ]
+        [ Input.text []
+            { text = label
+            , onChange = ChangedSetUpCell cell
+            , label = Input.labelHidden "cell value"
+            , placeholder = Nothing
+            }
+        ]
+
+
+viewSolve : Matrix Cell -> Element Msg
+viewSolve grid =
+    column []
+        [ row [ width fill, padding 5 ]
+            [ el [ centerX ] <| text "Solving"
+            , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
+            ]
+        , row [] [ viewSquare grid 0 0, viewSquare grid 0 3, viewSquare grid 0 6 ]
         , row [] [ viewSquare grid 3 0, viewSquare grid 3 3, viewSquare grid 3 6 ]
         , row [] [ viewSquare grid 6 0, viewSquare grid 6 3, viewSquare grid 6 6 ]
         ]
 
 
+viewSquare : Matrix Cell -> Int -> Int -> Element Msg
 viewSquare grid sr sc =
     let
         getCell r c =
@@ -288,11 +456,18 @@ viewCell cell =
             , Border.color grey
             , Font.center
             ]
-            [ el [ centerY, centerX, Font.size 28 ] <| text cellValue
-            , Input.button [ centerX ]
-                { onPress = Just (PressedResetCell cell)
-                , label = el [] <| text "X"
-                }
+            [ if cell.constant then
+                column [ width fill, height fill, Background.color lightGreen ]
+                    [ el [ centerY, centerX, Font.size 28 ] <| text cellValue ]
+
+              else
+                column [ width fill, height fill ]
+                    [ el [ centerY, centerX, Font.size 28 ] <| text cellValue
+                    , Input.button [ centerX ]
+                        { onPress = Just (PressedResetCell cell)
+                        , label = el [] <| text "X"
+                        }
+                    ]
             ]
 
     else
@@ -326,16 +501,29 @@ viewOption x y value show =
         }
 
 
+red : Element.Color
 red =
     rgb 1.0 0 0
 
 
+lightRed : Element.Color
+lightRed =
+    rgb 0.9 0.7 0.7
+
+
+blue : Element.Color
 blue =
     rgb 0.5 0.5 0.9
 
 
+grey : Element.Color
 grey =
     rgb 0.8 0.8 0.8
+
+
+lightGreen : Element.Color
+lightGreen =
+    rgb 0.7 0.9 0.7
 
 
 subscriptions : Model -> Sub msg
