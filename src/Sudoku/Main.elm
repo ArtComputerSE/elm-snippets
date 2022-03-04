@@ -68,7 +68,7 @@ initCell : Int -> Int -> Cell
 initCell row col =
     { row = row
     , col = col
-    , options = Set.empty
+    , options = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
     , conflict = False
     , constant = False
     }
@@ -453,7 +453,11 @@ viewCell cell =
             , height (px 94)
             , padding 5
             , Border.width 1
-            , Border.color grey
+            , if cell.conflict then
+                Border.color red
+
+              else
+                Border.color grey
             , Font.center
             ]
             [ if cell.constant then
