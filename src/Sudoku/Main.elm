@@ -2,7 +2,7 @@ module Sudoku.Main exposing (Model, Msg(..), init, main, subscriptions, update, 
 
 import Array exposing (Array)
 import Browser
-import Element exposing (Element, centerX, centerY, column, el, fill, height, padding, px, rgb, row, text, width)
+import Element exposing (Element, FocusStyle, centerX, centerY, column, el, fill, height, padding, paragraph, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -34,6 +34,7 @@ type alias Model =
 type ViewMode
     = SetUp
     | Solve
+    | Help
 
 
 type alias Cell =
@@ -50,6 +51,7 @@ type Msg
     | PressedResetCell Cell
     | PressedDone
     | PressedSetUp
+    | PressedHelp
     | ChangedSetUpCell Cell String
 
 
@@ -146,6 +148,9 @@ update msg model =
         PressedSetUp ->
             ( { model | viewMode = SetUp, grid = resetNonConstant model.grid }, Cmd.none )
 
+        PressedHelp ->
+            ( { model | viewMode = Help, grid = resetNonConstant model.grid }, Cmd.none )
+
         ChangedSetUpCell cell string ->
             let
                 defaultCell =
@@ -213,6 +218,9 @@ encodeViewMode viewMode =
 
         Solve ->
             Encode.string "Solve"
+
+        Help ->
+            Encode.string "Help"
 
 
 decodeViewMode : Decode.Decoder ViewMode
@@ -342,7 +350,15 @@ inSquare { row, col } =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layout [ centerX, width fill ] (viewAll model)
+    Element.layoutWith { options = [ Element.focusStyle noFocusStyle ] } [ centerX, width fill ] (viewAll model)
+
+
+noFocusStyle : FocusStyle
+noFocusStyle =
+    { borderColor = Nothing
+    , backgroundColor = Nothing
+    , shadow = Nothing
+    }
 
 
 viewAll : Model -> Element Msg
@@ -354,12 +370,16 @@ viewAll model =
         Solve ->
             viewSolve model.grid
 
+        Help ->
+            viewHelp
+
 
 viewSetUp : Matrix Cell -> Element Msg
 viewSetUp grid =
     column [ centerX, width fill ]
-        [ row [ centerX, width (px 900), padding 5 ]
-            [ el [ centerX ] <| text "Set up"
+        [ row [ centerX, width (px 900), padding 5, Font.family [ Font.serif ] ]
+            [ helpButton
+            , el [ centerX ] <| text "Set up"
             , Input.button buttonAttr
                 { onPress = Just PressedDone
                 , label = text "Done"
@@ -369,6 +389,22 @@ viewSetUp grid =
         , row [ centerX, width fill ] [ viewSetUpSquare borderMiddleLeft grid 3 0, viewSetUpSquare borderMiddleMiddle grid 3 3, viewSetUpSquare borderMiddleRight grid 3 6 ]
         , row [ centerX, width fill ] [ viewSetUpSquare borderBottomLeft grid 6 0, viewSetUpSquare borderBottomMiddle grid 6 3, viewSetUpSquare borderMiddleRight grid 6 6 ]
         ]
+
+
+helpButton : Element Msg
+helpButton =
+    Input.button []
+        { onPress = Just PressedHelp
+        , label =
+            column
+                [ Border.width 1
+                , Border.color grey
+                , Border.rounded 25
+                , Border.shadow { offset = ( 2, 2 ), size = 1, color = blue, blur = 1 }
+                , padding 10
+                ]
+                [ text "?" ]
+        }
 
 
 viewSetUpSquare : BorderConfig -> Matrix Cell -> Int -> Int -> Element Msg
@@ -414,8 +450,9 @@ viewSetUpCell cell =
 viewSolve : Matrix Cell -> Element Msg
 viewSolve grid =
     column [ centerX, width fill ]
-        [ row [ centerX, width (px 900), padding 5 ]
-            [ el [ centerX ] <| text "Solving"
+        [ row [ centerX, width (px 900), padding 5, Font.family [ Font.serif ] ]
+            [ helpButton
+            , el [ centerX ] <| text "Solving"
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
             ]
         , row [ centerX, width fill ] [ viewSquare borderTopLeft grid 0 0, viewSquare borderTopMiddle grid 0 3, viewSquare borderTopRight grid 0 6 ]
@@ -508,6 +545,23 @@ viewOption x y value show =
                     else
                         ""
         }
+
+
+viewHelp : Element Msg
+viewHelp =
+    column [ centerX, width (px 900), Font.family [ Font.serif ], spacing 10 ]
+        [ row [ centerX, width (px 900), padding 5, spacing 5 ]
+            [ Input.button buttonAttr { onPress = Just PressedDone, label = text "Solve" }
+            , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
+            ]
+        , paragraph [ Font.center, width fill, Font.size 24, Font.bold ] [ text "The Sudoku Notebook" ]
+        , paragraph [] [ text "Here's an aid to solve a sudoku puzzle. It keeps track of where there are conflicts while you still do the thinking, the whole point of spending time with puzzles." ]
+        , paragraph [] [ text "Start in Setup mode and enter your puzzle.  Press Done and you will be in Solve mode. The puzzle values will be in green." ]
+        , paragraph [] [ text "Every other cell has numbers 1-9 in them. A cell with a red border has at least one number that is in conflict with another cell that has a single number." ]
+        , paragraph [] [ text "Remove numbers of a cell that causes conflict. The remaining numbers are those which can be in that cell." ]
+        , paragraph [] [ text "Example, if a cell has the single value 5, then no other cell in the same row, the same column or same square, may have the value 5. Click on 5 in all the cells in the same row, column and square. Those cells will now have numbers 1-4 and 6-9 as options.  Keep going until there're no more conflicts. Eventually cells will have a single value and reduce the options for adjacent cells." ]
+        , paragraph [] [ text "The notebook is saved in your browser so if you come back here, your last puzzle will be restored. " ]
+        ]
 
 
 red : Element.Color
