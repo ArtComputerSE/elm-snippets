@@ -342,7 +342,7 @@ inSquare { row, col } =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layout [] (viewAll model)
+    Element.layout [ centerX, width fill ] (viewAll model)
 
 
 viewAll : Model -> Element Msg
@@ -357,35 +357,34 @@ viewAll model =
 
 viewSetUp : Matrix Cell -> Element Msg
 viewSetUp grid =
-    column []
-        [ row [ width fill, padding 5 ]
+    column [ centerX, width fill ]
+        [ row [ centerX, width (px 900), padding 5 ]
             [ el [ centerX ] <| text "Set up"
             , Input.button buttonAttr
                 { onPress = Just PressedDone
                 , label = text "Done"
                 }
             ]
-        , row [] [ viewSetUpSquare grid 0 0, viewSetUpSquare grid 0 3, viewSetUpSquare grid 0 6 ]
-        , row [] [ viewSetUpSquare grid 3 0, viewSetUpSquare grid 3 3, viewSetUpSquare grid 3 6 ]
-        , row [] [ viewSetUpSquare grid 6 0, viewSetUpSquare grid 6 3, viewSetUpSquare grid 6 6 ]
+        , row [ centerX, width fill ] [ viewSetUpSquare borderTopLeft grid 0 0, viewSetUpSquare borderTopMiddle grid 0 3, viewSetUpSquare borderTopRight grid 0 6 ]
+        , row [ centerX, width fill ] [ viewSetUpSquare borderMiddleLeft grid 3 0, viewSetUpSquare borderMiddleMiddle grid 3 3, viewSetUpSquare borderMiddleRight grid 3 6 ]
+        , row [ centerX, width fill ] [ viewSetUpSquare borderBottomLeft grid 6 0, viewSetUpSquare borderBottomMiddle grid 6 3, viewSetUpSquare borderMiddleRight grid 6 6 ]
         ]
 
 
-buttonAttr : List (Element.Attribute msg)
-buttonAttr =
-    [ Border.rounded 5, Border.color grey, Border.width 1, padding 5, Background.color lightRed ]
-
-
-viewSetUpSquare : Matrix Cell -> Int -> Int -> Element Msg
-viewSetUpSquare grid sr sc =
+viewSetUpSquare : BorderConfig -> Matrix Cell -> Int -> Int -> Element Msg
+viewSetUpSquare borders grid sr sc =
     let
         getCell r c =
             Matrix.get grid r c |> Maybe.withDefault emptyCell
     in
-    column [ Border.width 2, Border.color blue ]
-        [ row [] [ viewSetUpCell (getCell sr sc), viewSetUpCell (getCell sr (sc + 1)), viewSetUpCell (getCell sr (sc + 2)) ]
-        , row [] [ viewSetUpCell (getCell (sr + 1) sc), viewSetUpCell (getCell (sr + 1) (sc + 1)), viewSetUpCell (getCell (sr + 1) (sc + 2)) ]
-        , row [] [ viewSetUpCell (getCell (sr + 2) sc), viewSetUpCell (getCell (sr + 2) (sc + 1)), viewSetUpCell (getCell (sr + 2) (sc + 2)) ]
+    column
+        [ centerX
+        , Border.widthEach borders
+        , Border.color blue
+        ]
+        [ row [ centerX ] [ viewSetUpCell (getCell sr sc), viewSetUpCell (getCell sr (sc + 1)), viewSetUpCell (getCell sr (sc + 2)) ]
+        , row [ centerX ] [ viewSetUpCell (getCell (sr + 1) sc), viewSetUpCell (getCell (sr + 1) (sc + 1)), viewSetUpCell (getCell (sr + 1) (sc + 2)) ]
+        , row [ centerX ] [ viewSetUpCell (getCell (sr + 2) sc), viewSetUpCell (getCell (sr + 2) (sc + 1)), viewSetUpCell (getCell (sr + 2) (sc + 2)) ]
         ]
 
 
@@ -414,24 +413,30 @@ viewSetUpCell cell =
 
 viewSolve : Matrix Cell -> Element Msg
 viewSolve grid =
-    column []
-        [ row [ width fill, padding 5 ]
+    column [ centerX, width fill ]
+        [ row [ centerX, width (px 900), padding 5 ]
             [ el [ centerX ] <| text "Solving"
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
             ]
-        , row [] [ viewSquare grid 0 0, viewSquare grid 0 3, viewSquare grid 0 6 ]
-        , row [] [ viewSquare grid 3 0, viewSquare grid 3 3, viewSquare grid 3 6 ]
-        , row [] [ viewSquare grid 6 0, viewSquare grid 6 3, viewSquare grid 6 6 ]
+        , row [ centerX, width fill ] [ viewSquare borderTopLeft grid 0 0, viewSquare borderTopMiddle grid 0 3, viewSquare borderTopRight grid 0 6 ]
+        , row [ centerX, width fill ] [ viewSquare borderMiddleLeft grid 3 0, viewSquare borderMiddleMiddle grid 3 3, viewSquare borderMiddleRight grid 3 6 ]
+        , row [ centerX, width fill ] [ viewSquare borderBottomLeft grid 6 0, viewSquare borderBottomMiddle grid 6 3, viewSquare borderBottomRight grid 6 6 ]
         ]
 
 
-viewSquare : Matrix Cell -> Int -> Int -> Element Msg
-viewSquare grid sr sc =
+viewSquare : BorderConfig -> Matrix Cell -> Int -> Int -> Element Msg
+viewSquare borders grid sr sc =
     let
         getCell r c =
             Matrix.get grid r c |> Maybe.withDefault emptyCell
     in
-    column [ Border.width 2, Border.color blue ]
+    column
+        [ centerX
+        , Border.widthEach borders
+        , Border.color blue
+        , width (px 308)
+        , height (px 308)
+        ]
         [ row [] [ viewCell (getCell sr sc), viewCell (getCell sr (sc + 1)), viewCell (getCell sr (sc + 2)) ]
         , row [] [ viewCell (getCell (sr + 1) sc), viewCell (getCell (sr + 1) (sc + 1)), viewCell (getCell (sr + 1) (sc + 2)) ]
         , row [] [ viewCell (getCell (sr + 2) sc), viewCell (getCell (sr + 2) (sc + 1)), viewCell (getCell (sr + 2) (sc + 2)) ]
@@ -449,8 +454,8 @@ viewCell cell =
     in
     if isSingleCell cell /= Nothing then
         column
-            [ width (px 100)
-            , height (px 94)
+            [ width (px 101)
+            , height (px 101)
             , padding 5
             , Border.width 1
             , if cell.conflict then
@@ -528,6 +533,64 @@ grey =
 lightGreen : Element.Color
 lightGreen =
     rgb 0.7 0.9 0.7
+
+
+buttonAttr : List (Element.Attribute msg)
+buttonAttr =
+    [ Border.rounded 5, Border.color grey, Border.width 1, padding 5, Background.color lightRed ]
+
+
+type alias BorderConfig =
+    { bottom : Int
+    , left : Int
+    , right : Int
+    , top : Int
+    }
+
+
+borderTopLeft : BorderConfig
+borderTopLeft =
+    { top = 4, left = 4, right = 2, bottom = 2 }
+
+
+borderTopMiddle : BorderConfig
+borderTopMiddle =
+    { top = 4, left = 2, right = 2, bottom = 2 }
+
+
+borderTopRight : BorderConfig
+borderTopRight =
+    { top = 4, left = 2, right = 4, bottom = 2 }
+
+
+borderMiddleLeft : BorderConfig
+borderMiddleLeft =
+    { top = 2, left = 4, right = 2, bottom = 2 }
+
+
+borderMiddleMiddle : BorderConfig
+borderMiddleMiddle =
+    { top = 2, left = 2, right = 2, bottom = 2 }
+
+
+borderMiddleRight : BorderConfig
+borderMiddleRight =
+    { top = 2, left = 2, right = 4, bottom = 2 }
+
+
+borderBottomLeft : BorderConfig
+borderBottomLeft =
+    { top = 2, left = 4, right = 2, bottom = 4 }
+
+
+borderBottomMiddle : BorderConfig
+borderBottomMiddle =
+    { top = 2, left = 2, right = 2, bottom = 4 }
+
+
+borderBottomRight : BorderConfig
+borderBottomRight =
+    { top = 2, left = 2, right = 4, bottom = 4 }
 
 
 subscriptions : Model -> Sub msg
