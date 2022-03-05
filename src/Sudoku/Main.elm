@@ -2,7 +2,7 @@ module Sudoku.Main exposing (Model, Msg(..), init, main, subscriptions, update, 
 
 import Array exposing (Array)
 import Browser
-import Element exposing (Element, FocusStyle, centerX, centerY, column, el, fill, height, padding, paragraph, px, rgb, row, spacing, text, width)
+import Element exposing (Element, FocusStyle, centerX, centerY, column, el, fill, height, newTabLink, padding, paragraph, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -557,12 +557,13 @@ viewHelp =
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
             ]
         , paragraph [ Font.center, width fill, Font.size 24, Font.bold ] [ text "The Sudoku Notebook" ]
-        , paragraph [] [ text "Here's an aid to solve a sudoku puzzle. It keeps track of where there are conflicts while you still do the thinking, the whole point of spending time with puzzles." ]
+        , paragraph [] [ text "Here's an aid to solve Sudoku puzzles. It keeps track of where there are conflicts while you still do the thinking, the whole point of spending time with puzzles." ]
         , paragraph [] [ text "Start in Setup mode and enter your puzzle.  Press Done and you will be in Solve mode. The puzzle values will be in green." ]
-        , paragraph [] [ text "Every other cell has numbers 1-9 in them. A cell with a red border has at least one number that is in conflict with another cell that has a single number." ]
-        , paragraph [] [ text "Remove numbers of a cell that causes conflict. The remaining numbers are those which can be in that cell." ]
-        , paragraph [] [ text "Example, if a cell has the single value 5, then no other cell in the same row, the same column or same square, may have the value 5. Click on 5 in all the cells in the same row, column and square. Those cells will now have numbers 1-4 and 6-9 as options.  Keep going until there're no more conflicts. Eventually cells will have a single value and reduce the options for adjacent cells." ]
+        , paragraph [] [ text "All other cells have numbers 1 - 9 in them. A cell with a red border has at least one number that is in conflict with another cell that has a single number." ]
+        , paragraph [] [ text "Remove numbers from a cell that cause conflict. The remaining numbers are those which can be in that cell." ]
+        , paragraph [] [ text "Example, if a cell has the single value 5, then no other cell in the same row, the same column or same square, may have the value 5. Click on 5 in all the cells in the same row, column and square. Those cells will now have the numbers 1 - 4 and 6 - 9 as options. Keep going until there are no more conflicts. Eventually cells will have a single value and reduce the options for adjacent cells." ]
         , paragraph [] [ text "The notebook is saved in your browser so if you come back here, your last puzzle will be restored. " ]
+        , paragraph [] [ text "You can find the source code here: ", newTabLink [ Font.color blue ] { label = text "GitHub", url = "https://github.com/ArtComputerSE/elm-snippets/tree/master/src/Sudoku" } ]
         ]
 
 
