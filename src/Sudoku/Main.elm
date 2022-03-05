@@ -415,7 +415,8 @@ viewSetUpSquare borders grid sr sc =
     in
     column
         [ centerX
-        , Border.widthEach borders
+        , Border.widthEach borders.width
+        , Border.roundEach borders.round
         , Border.color blue
         ]
         [ row [ centerX ] [ viewSetUpCell (getCell sr sc), viewSetUpCell (getCell sr (sc + 1)), viewSetUpCell (getCell sr (sc + 2)) ]
@@ -469,7 +470,8 @@ viewSquare borders grid sr sc =
     in
     column
         [ centerX
-        , Border.widthEach borders
+        , Border.widthEach borders.width
+        , Border.roundEach borders.round
         , Border.color blue
         , width (px 308)
         , height (px 308)
@@ -595,56 +597,110 @@ buttonAttr =
 
 
 type alias BorderConfig =
+    { width :
+        { bottom : Int
+        , left : Int
+        , right : Int
+        , top : Int
+        }
+    , round :
+        { topLeft : Int
+        , topRight : Int
+        , bottomLeft : Int
+        , bottomRight : Int
+        }
+    }
+
+
+defaultWidth :
     { bottom : Int
     , left : Int
     , right : Int
     , top : Int
     }
+defaultWidth =
+    { bottom = 2
+    , left = 2
+    , right = 2
+    , top = 2
+    }
+
+
+defaultRound :
+    { topLeft : Int
+    , topRight : Int
+    , bottomLeft : Int
+    , bottomRight : Int
+    }
+defaultRound =
+    { topLeft = 0
+    , topRight = 0
+    , bottomLeft = 0
+    , bottomRight = 0
+    }
 
 
 borderTopLeft : BorderConfig
 borderTopLeft =
-    { top = 4, left = 4, right = 2, bottom = 2 }
+    { width = { defaultWidth | top = 4, left = 4 }
+    , round = { defaultRound | topLeft = 4 }
+    }
 
 
 borderTopMiddle : BorderConfig
 borderTopMiddle =
-    { top = 4, left = 2, right = 2, bottom = 2 }
+    { width = { defaultWidth | top = 4 }
+    , round = defaultRound
+    }
 
 
 borderTopRight : BorderConfig
 borderTopRight =
-    { top = 4, left = 2, right = 4, bottom = 2 }
+    { width = { defaultWidth | top = 4, right = 4 }
+    , round = { defaultRound | topRight = 4 }
+    }
 
 
 borderMiddleLeft : BorderConfig
 borderMiddleLeft =
-    { top = 2, left = 4, right = 2, bottom = 2 }
+    { width = { defaultWidth | left = 4 }
+    , round = defaultRound
+    }
 
 
 borderMiddleMiddle : BorderConfig
 borderMiddleMiddle =
-    { top = 2, left = 2, right = 2, bottom = 2 }
+    { width = defaultWidth
+    , round = defaultRound
+    }
 
 
 borderMiddleRight : BorderConfig
 borderMiddleRight =
-    { top = 2, left = 2, right = 4, bottom = 2 }
+    { width = { defaultWidth | right = 4 }
+    , round = defaultRound
+    }
 
 
 borderBottomLeft : BorderConfig
 borderBottomLeft =
-    { top = 2, left = 4, right = 2, bottom = 4 }
+    { width = { defaultWidth | left = 4, bottom = 4 }
+    , round = { defaultRound | bottomLeft = 4 }
+    }
 
 
 borderBottomMiddle : BorderConfig
 borderBottomMiddle =
-    { top = 2, left = 2, right = 2, bottom = 4 }
+    { width = { defaultWidth | bottom = 4 }
+    , round = defaultRound
+    }
 
 
 borderBottomRight : BorderConfig
 borderBottomRight =
-    { top = 2, left = 2, right = 4, bottom = 4 }
+    { width = { defaultWidth | right = 4, bottom = 4 }
+    , round = { defaultRound | bottomRight = 4 }
+    }
 
 
 subscriptions : Model -> Sub msg
