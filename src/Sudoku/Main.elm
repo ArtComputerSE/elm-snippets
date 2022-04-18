@@ -2,7 +2,7 @@ module Sudoku.Main exposing (Model, Msg(..), init, main, subscriptions, update, 
 
 import Array exposing (Array)
 import Browser
-import Element exposing (Element, FocusStyle, centerX, centerY, column, el, fill, height, newTabLink, padding, paragraph, px, rgb, row, spacing, text, width)
+import Element exposing (Element, FocusStyle, centerX, centerY, column, el, fill, height, maximum, newTabLink, padding, paragraph, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -377,7 +377,7 @@ viewAll model =
 viewSetUp : Matrix Cell -> Element Msg
 viewSetUp grid =
     column [ centerX, width fill ]
-        [ row [ centerX, width (px 900), padding 5, Font.family [ Font.serif ] ]
+        [ row topRowAttributes
             [ helpButton
             , el [ centerX ] <| text "Set up"
             , Input.button buttonAttr
@@ -405,6 +405,11 @@ helpButton =
                 ]
                 [ text "?" ]
         }
+
+
+topRowAttributes : List (Element.Attribute msg)
+topRowAttributes =
+    [ centerX, width (fill |> maximum 900), padding 5, Font.family [ Font.serif ] ]
 
 
 viewSetUpSquare : BorderConfig -> Matrix Cell -> Int -> Int -> Element Msg
@@ -451,7 +456,7 @@ viewSetUpCell cell =
 viewSolve : Matrix Cell -> Element Msg
 viewSolve grid =
     column [ centerX, width fill ]
-        [ row [ centerX, width (px 900), padding 5, Font.family [ Font.serif ] ]
+        [ row topRowAttributes
             [ helpButton
             , el [ centerX ] <| text "Solving"
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
@@ -551,8 +556,8 @@ viewOption x y value show =
 
 viewHelp : Element Msg
 viewHelp =
-    column [ centerX, width (px 900), Font.family [ Font.serif ], spacing 10 ]
-        [ row [ centerX, width (px 900), padding 5, spacing 5 ]
+    column [ width (fill |> maximum 900), spacing 10, padding 5 ]
+        [ row topRowAttributes
             [ Input.button buttonAttr { onPress = Just PressedDone, label = text "Solve" }
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
             ]
