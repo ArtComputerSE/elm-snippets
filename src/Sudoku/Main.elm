@@ -9,7 +9,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Json.Decode as Decode
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
 import Matrix exposing (Matrix)
 import Set exposing (Set)
@@ -41,6 +41,7 @@ type alias Cell =
     { row : Int
     , col : Int
     , options : Set Int
+    , conflictOptions : Set Int
     , conflict : Bool
     , constant : Bool
     }
@@ -49,6 +50,8 @@ type alias Cell =
 type Msg
     = ClickedCell Int Int Int
     | PressedResetCell Cell
+    | PressedClearConstant Cell
+    | PressedClearAllConstants
     | PressedDone
     | PressedSetUp
     | PressedHelp
@@ -71,6 +74,7 @@ initCell row col =
     { row = row
     , col = col
     , options = Set.fromList [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    , conflictOptions = Set.empty
     , conflict = False
     , constant = False
     }
@@ -81,6 +85,7 @@ emptyCell =
     { row = 0
     , col = 0
     , options = Set.empty
+    , conflictOptions = Set.empty
     , conflict = False
     , constant = True
     }
@@ -139,6 +144,29 @@ update msg model =
             let
                 newModel =
                     checkGrid { model | grid = Matrix.set model.grid cell.row cell.col (initCell cell.row cell.col) }
+            in
+            ( newModel, saveModel newModel )
+
+        PressedClearConstant cell ->
+            let
+                singleCell : SingelCell
+                singleCell =
+                    { row = cell.row
+                    , col = cell.col
+                    , value = Set.toList cell.options |> List.head |> Maybe.withDefault 0
+                    }
+
+                newModel : Model
+                newModel =
+                    checkGrid { model | grid = clearConflicts model.grid singleCell }
+            in
+            ( newModel, saveModel newModel )
+
+        PressedClearAllConstants ->
+            let
+                newModel : Model
+                newModel =
+                    checkGrid { model | grid = clearAllConflicts model.grid }
             in
             ( newModel, saveModel newModel )
 
@@ -263,6 +291,7 @@ encodeCell cell =
         [ ( "row", Encode.int cell.row )
         , ( "col", Encode.int cell.col )
         , ( "options", Encode.list Encode.int (Set.toList cell.options) )
+        , ( "conflictOptions", Encode.list Encode.int (Set.toList cell.conflictOptions) )
         , ( "conflict", Encode.bool cell.conflict )
         , ( "constant", Encode.bool cell.constant )
         ]
@@ -274,6 +303,7 @@ decodeCell =
         |> required "row" Decode.int
         |> required "col" Decode.int
         |> required "options" (Decode.list Decode.int |> Decode.map Set.fromList)
+        |> optional "conflictOptions" (Decode.list Decode.int |> Decode.map Set.fromList) Set.empty
         |> required "conflict" Decode.bool
         |> required "constant" Decode.bool
 
@@ -318,29 +348,56 @@ isSingleCell cell =
 checkCell : List SingelCell -> Cell -> Cell
 checkCell sc cell =
     let
+        rowConflict : List Int
         rowConflict =
-            0 < (List.filter (\s -> s.row == cell.row && s.col /= cell.col && Set.member s.value cell.options) sc |> List.length)
+            List.filter (\s -> s.row == cell.row && s.col /= cell.col && Set.member s.value cell.options) sc |> List.map .value
 
+        colConflict : List Int
         colConflict =
-            0 < (List.filter (\s -> s.col == cell.col && s.row /= cell.row && Set.member s.value cell.options) sc |> List.length)
+            List.filter (\s -> s.col == cell.col && s.row /= cell.row && Set.member s.value cell.options) sc |> List.map .value
 
+        squareConflict : List Int
         squareConflict =
-            0
-                < (List.filter
-                    (\s ->
-                        inSquare s
-                            == inSquare cell
-                            && s.col
-                            /= cell.col
-                            && s.row
-                            /= cell.row
-                            && Set.member s.value cell.options
-                    )
-                    sc
-                    |> List.length
-                  )
+            List.filter
+                (\s ->
+                    inSquare s
+                        == inSquare cell
+                        && s.col
+                        /= cell.col
+                        && s.row
+                        /= cell.row
+                        && Set.member s.value cell.options
+                )
+                sc
+                |> List.map .value
+
+        conflictOptions : Set Int
+        conflictOptions =
+            rowConflict ++ colConflict ++ squareConflict |> Set.fromList
     in
-    { cell | conflict = rowConflict || colConflict || squareConflict }
+    { cell | conflict = Set.size conflictOptions > 0, conflictOptions = conflictOptions }
+
+
+clearAllConflicts : Matrix Cell -> Matrix Cell
+clearAllConflicts grid =
+    List.foldl (\sc g -> clearConflicts g sc) grid (singleCells grid)
+
+
+clearConflicts : Matrix Cell -> SingelCell -> Matrix Cell
+clearConflicts grid singleCell =
+    Matrix.map (clearConflict singleCell) grid
+
+
+clearConflict : SingelCell -> Cell -> Cell
+clearConflict singleCell cell =
+    if cell.constant || (singleCell.row == cell.row && singleCell.col == cell.col) then
+        cell
+
+    else if singleCell.row == cell.row || singleCell.col == cell.col || inSquare singleCell == inSquare cell then
+        { cell | options = Set.remove singleCell.value cell.options }
+
+    else
+        cell
 
 
 inSquare : { a | row : Int, col : Int } -> Int
@@ -458,7 +515,10 @@ viewSolve grid =
     column [ centerX, width fill ]
         [ row topRowAttributes
             [ helpButton
-            , el [ centerX ] <| text "Solving"
+            , row [ centerX, spacing 5 ]
+                [ text "Solving"
+                , Input.button (buttonAttr ++ [ Background.color lightGreen ]) { onPress = Just PressedClearAllConstants, label = text "💣" }
+                ]
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
             ]
         , row [ centerX, width fill ] [ viewSquare borderTopLeft grid 0 0, viewSquare borderTopMiddle grid 0 3, viewSquare borderTopRight grid 0 6 ]
@@ -490,37 +550,40 @@ viewSquare borders grid sr sc =
 viewCell : Cell -> Element Msg
 viewCell cell =
     let
-        show n =
-            Set.member n cell.options
-
         cellValue =
             Set.toList cell.options |> List.head |> Maybe.withDefault 0 |> String.fromInt
     in
-    if isSingleCell cell /= Nothing then
+    if cell.constant then
         column
-            [ width (px 101)
-            , height (px 101)
+            [ width (px 100)
+            , height (px 100)
             , padding 5
-            , Border.width 1
-            , if cell.conflict then
-                Border.color red
-
-              else
-                Border.color grey
-            , Font.center
             ]
-            [ if cell.constant then
-                column [ width fill, height fill, Background.color lightGreen ]
-                    [ el [ centerY, centerX, Font.size 28 ] <| text cellValue ]
+            [ el [ width fill, height fill, Font.center, centerY, centerX, Font.size 42, Background.color lightGreen ] <| text cellValue
+            ]
+
+    else if isSingleCell cell /= Nothing then
+        column
+            [ width (px 100)
+            , height (px 100)
+            , padding 5
+            , if cell.conflict then
+                Background.color lightRed
 
               else
-                column [ width fill, height fill ]
-                    [ el [ centerY, centerX, Font.size 28 ] <| text cellValue
-                    , Input.button [ centerX ]
-                        { onPress = Just (PressedResetCell cell)
-                        , label = el [] <| text "X"
-                        }
-                    ]
+                Background.color white
+            ]
+            [ el [ centerY, centerX, Font.size 28 ] <| text cellValue
+            , row [ width fill, height fill, spacing 5 ]
+                [ Input.button [ centerX ]
+                    { onPress = Just (PressedResetCell cell)
+                    , label = el [ Font.size 28 ] <| text "↺"
+                    }
+                , Input.button [ centerX ]
+                    { onPress = Just (PressedClearConstant cell)
+                    , label = el [] <| text "💣"
+                    }
+                ]
             ]
 
     else
@@ -533,20 +596,28 @@ viewCell cell =
               else
                 Border.color grey
             ]
-            [ row [] [ viewOption cell.row cell.col 1 (show 1), viewOption cell.row cell.col 2 (show 2), viewOption cell.row cell.col 3 (show 3) ]
-            , row [] [ viewOption cell.row cell.col 4 (show 4), viewOption cell.row cell.col 5 (show 5), viewOption cell.row cell.col 6 (show 6) ]
-            , row [] [ viewOption cell.row cell.col 7 (show 7), viewOption cell.row cell.col 8 (show 8), viewOption cell.row cell.col 9 (show 9) ]
+            [ row [] [ viewOption 1 cell, viewOption 2 cell, viewOption 3 cell ]
+            , row [] [ viewOption 4 cell, viewOption 5 cell, viewOption 6 cell ]
+            , row [] [ viewOption 7 cell, viewOption 8 cell, viewOption 9 cell ]
             ]
 
 
-viewOption : Int -> Int -> Int -> Bool -> Element Msg
-viewOption x y value show =
-    Input.button []
-        { onPress = Just <| ClickedCell x y value
+viewOption : Int -> Cell -> Element Msg
+viewOption value cell =
+    let
+        backgroundColor =
+            if Set.member value cell.conflictOptions then
+                lightRed
+
+            else
+                white
+    in
+    Input.button [ Background.color backgroundColor ]
+        { onPress = Just <| ClickedCell cell.row cell.col value
         , label =
             el [ width (px 30), height (px 30), Border.width 1, Border.color grey, Font.center, Font.size 16 ] <|
                 text <|
-                    if show then
+                    if Set.member value cell.options then
                         String.fromInt value
 
                     else
@@ -556,7 +627,7 @@ viewOption x y value show =
 
 viewHelp : Element Msg
 viewHelp =
-    column [ width (fill |> maximum 900), spacing 10, padding 5 ]
+    column [ width (fill |> maximum 900), spacing 10, padding 5, centerX ]
         [ row topRowAttributes
             [ Input.button buttonAttr { onPress = Just PressedDone, label = text "Solve" }
             , Input.button buttonAttr { onPress = Just PressedSetUp, label = text "Set up" }
@@ -595,6 +666,11 @@ grey =
 lightGreen : Element.Color
 lightGreen =
     rgb 0.7 0.9 0.7
+
+
+white : Element.Color
+white =
+    rgb 1 1 1
 
 
 buttonAttr : List (Element.Attribute msg)

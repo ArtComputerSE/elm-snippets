@@ -20,7 +20,6 @@
         });
 
     elmApp.ports.setStorage.subscribe(function (state) {
-        console.log('Set storage', state);
         localStorage.setItem('sudoku', JSON.stringify(state));
     });
 
