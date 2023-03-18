@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat GPT 4 suggest</title>
+</head>
+<style>
+    .sprite {
+        width: 64px;
+        height: 64px;
+        background-image: url('fire1_64.png');
+        animation: play-sprite 1s steps(10) infinite,
+        play-row 10s steps(10) infinite;
+    }
+
+    @keyframes play-sprite {
+        from { background-position: 0 0; }
+        to { background-position: -640px -640px; }
+    }
+
+    @keyframes play-row {
+        from { background-position-y: 0; }
+        to { background-position-y: -640px; }
+    }
+</style>
+<body>
+<div class="sprite"></div>
+</body>
+</html>
