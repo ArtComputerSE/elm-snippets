@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Combo of SO and ChatGPT</title>
+    <style>
+        body {
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+
+        .isometric {
+            width: 350px;
+            height: 350px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            /* The CSS to get the Isometric Effect */
+            transform: rotateX(60deg) rotateZ(45deg);
+        }
+
+        .tile {
+            border: 3px dashed blue;
+            /* In order to position the object properly I have to set the position property to relative in order to absolutely position the object later in the CSS */
+            position: relative;
+        }
+
+        .tile:hover {
+            border-color: red;
+        }
+
+        .sprite {
+            width: 64px;
+            height: 64px;
+            animation: play-sprite 1s steps(10) infinite,
+            play-row 10s steps(10) infinite;
+            position: relative;
+        }
+
+        @keyframes play-sprite {
+            from {
+                background-position: 0 0;
+            }
+            to {
+                background-position: -640px -640px;
+            }
+        }
+
+        @keyframes play-row {
+            from {
+                background-position-y: 0;
+            }
+            to {
+                background-position-y: -640px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="isometric">
+    <div class="tile"><div class="sprite" style="transform: rotateX(-60deg) rotateZ(-45deg);background-image: url('fire1_64.png')"></div></div>
+    <div class="sprite" style= "background-image: url('fire2_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire3_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire4_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire5_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire6_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire7_64.png')"></div>
+    <div class="sprite" style= "background-image: url('fire8_64.png')"></div>
+</div>
+</body>
+</html>
