@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notification test</title>
+    <script type="text/javascript" src="elm.js"></script>
+</head>
+<body>
+<h1>Notification test</h1>
+<div>
+    <p>
+        <button id="permission">
+            Click this to request permission
+        </button>
+        <button id="show">
+            Click this to show notification
+        </button>
+    </p>
+</div>
+<div id="elm">
+    <!-- Elm -->
+</div>
+<script type="text/javascript">
+    const currentPermission = Notification.permission;
+
+    const elmApp =
+        Elm.Notification.Notification.init({
+            node: document.getElementById('elm'),
+            flags: currentPermission
+        });
+
+    elmApp.ports.sendNotification.subscribe(function (notificationJson) {
+        const notification = new Notification(notificationJson.title, { body: notificationJson.body});
+        setTimeout(() => {
+            notification.close();
+        }, 10 * 1000);
+    });
+
+    elmApp.ports.requestPermission.subscribe(async () => {
+        notifyPermission = await Notification.requestPermission();
+        // send the current permission to Elm
+    });
+</script>
+</body>
+</html>
