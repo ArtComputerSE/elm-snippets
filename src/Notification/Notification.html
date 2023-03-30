@@ -12,6 +12,7 @@
 </div>
 <script type="text/javascript">
     const currentPermission = Notification.permission;
+    let notification = null;
 
     const elmApp =
         Elm.Notification.Notification.init({
@@ -20,15 +21,22 @@
         });
 
     elmApp.ports.sendNotification.subscribe(function (notificationJson) {
-        const notification = new Notification(notificationJson.title, { body: notificationJson.body});
+        notification = new Notification(notificationJson.title, { body: notificationJson.body});
+        notification.addEventListener('error', (event) => {
+            console.log("ERROR", event);
+        });
+        notification.addEventListener('click', (event) => {
+            console.log("CLICK", event);
+        });
+        console.log(notification);
         setTimeout(() => {
             notification.close();
         }, 10 * 1000);
     });
 
     elmApp.ports.requestPermission.subscribe(async () => {
-        notifyPermission = await Notification.requestPermission();
-        // send the current permission to Elm
+        let notifyPermission = await Notification.requestPermission();
+        elmApp.ports.permissionChanged.send(notifyPermission);
     });
 </script>
 </body>

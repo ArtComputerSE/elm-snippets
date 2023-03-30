@@ -5,7 +5,7 @@ import Html exposing (div, input, label, p, text)
 import Html.Attributes exposing (type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
-import Notification.Port exposing (requestPermission, sendNotification)
+import Notification.Port exposing (permissionChanged, requestPermission, sendNotification)
 
 
 type alias Model =
@@ -16,6 +16,7 @@ type alias Model =
 
 type Msg
     = RequestPermission
+    | PermissionChanged String
     | SendNotification
     | MessageInput String
 
@@ -39,6 +40,9 @@ update msg model =
     case msg of
         RequestPermission ->
             ( model, requestPermission () )
+
+        PermissionChanged string ->
+            ( { model | currentPermission = string }, Cmd.none )
 
         SendNotification ->
             ( model
@@ -66,4 +70,4 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    permissionChanged PermissionChanged
