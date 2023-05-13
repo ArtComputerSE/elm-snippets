@@ -7,6 +7,9 @@
 </head>
 <body>
 <h1>Notification test</h1>
+<p>
+    Use this to test how notification behaves on different devices.
+</p>
 <div id="elm">
     <!-- Elm -->
 </div>
@@ -21,12 +24,17 @@
         });
 
     elmApp.ports.sendNotification.subscribe(function (notificationJson) {
-        notification = new Notification(notificationJson.title, { body: notificationJson.body});
+        notification = new Notification(notificationJson.title,
+            {
+                body: notificationJson.body,
+                icon: notificationJson.icon
+            });
         notification.addEventListener('error', (event) => {
             console.log("ERROR", event);
+            elmApp.ports.notificationError.send(event.target.body);
         });
         notification.addEventListener('click', (event) => {
-            console.log("CLICK", event);
+            elmApp.ports.notificationClicked.send(event.target.body);
         });
         console.log(notification);
         setTimeout(() => {
