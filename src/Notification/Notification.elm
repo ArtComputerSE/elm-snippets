@@ -1,8 +1,8 @@
 module Notification.Notification exposing (Model, init, main)
 
 import Browser
-import Html exposing (div, input, label, p, span, text)
-import Html.Attributes exposing (size, style, type_, value)
+import Html exposing (a, div, input, label, p, span, text)
+import Html.Attributes exposing (href, size, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Notification.Port exposing (notificationClicked, notificationError, permissionChanged, requestPermission, sendNotification)
@@ -100,6 +100,10 @@ view model =
                 [ input [ type_ "button", onClick SendNotification, value "Send" ] [] ]
             ]
         , p [] [ text model.eventText ]
+        , div [ style "display" "flex", style "justify-content" "right" ]
+            [ a [ href "https://github.com/ArtComputerSE/elm-snippets/tree/master/src/Notification" ]
+                [ text "Source code at GitHub" ]
+            ]
         ]
 
 
